@@ -1,11 +1,12 @@
 {
   "databases":{
     "postgres": {
-      "host": "localhost",
+      "host": "127.0.0.1",
       "port": 5432,
       "user": "admin",
-      "pwd": "123",
-      "ssl_mode": "require"
+      "pwd": "admin",
+      "db_name": "t_crud",
+      "ssl_mode": "disable"
     }
   },
   "environment": "dev"
