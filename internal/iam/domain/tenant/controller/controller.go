@@ -3,5 +3,11 @@ package controller
 import "github.com/gin-gonic/gin"
 
 type Controller interface {
+	RegisterRoutes(routerGroup *gin.RouterGroup)
 	Create(c *gin.Context)
+}
+
+func (ctrl *impl) RegisterRoutes(routerGroup *gin.RouterGroup) {
+	group := routerGroup.Group("/tenant")
+	group.POST("", ctrl.Create)
 }

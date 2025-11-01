@@ -12,10 +12,10 @@ CREATE TABLE tenant (
                         live BOOLEAN NOT NULL DEFAULT TRUE,
 
     -- Data e Hora da Criação - PASSADA PELO BACKEND
-                        create_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+                        create_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
 
     -- Data e Hora da Última Atualização - PASSADA PELO BACKEND
-                        update_date TIMESTAMP WITHOUT TIME ZONE NOT NULL
+                        update_at TIMESTAMP WITHOUT TIME ZONE NOT NULL
 );
 
 -- Opcional: Criação de um índice para o campo 'document' para otimizar pesquisas

@@ -3,8 +3,8 @@
     "postgres": {
       "host": "127.0.0.1",
       "port": 5432,
-      "user": "admin",
-      "pwd": "admin",
+      "user": "postgres",
+      "pwd": "postgres",
       "db_name": "t_crud",
       "ssl_mode": "disable"
     }
