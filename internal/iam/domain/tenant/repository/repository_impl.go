@@ -45,13 +45,10 @@ func (r *impl) Read(ctx context.Context, m model.Tenant) (model.Tenant, error) {
 	} else if m.Document != "" {
 		query = query.Where("document = ?", m.Document).First(&m)
 	} else {
-		// 3. MAPEAMENTO BÔNUS: Mapeia o erro de input para um erro de domínio
-		// (Assumindo que você definiu 'ErrInvalidInput' no seu 'errors.go')
 		return model.Tenant{}, tenant.ErrInvalidInput
 	}
 
 	if query.Error != nil {
-		// 4. MAPEAMENTO DE NOT FOUND: Mapeia o erro do GORM para o erro de domínio
 		if errors.Is(query.Error, gorm.ErrRecordNotFound) {
 			return model.Tenant{}, tenant.ErrNotFound
 		}
@@ -59,4 +56,24 @@ func (r *impl) Read(ctx context.Context, m model.Tenant) (model.Tenant, error) {
 	}
 
 	return m, nil
+}
+
+func (r *impl) List(ctx context.Context, page, pageSize int) ([]model.Tenant, error) {
+	var listTenant []model.Tenant
+	query := r.db.WithContext(ctx).Model(&model.Tenant{})
+
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+
+	result := query.Limit(pageSize).Offset(offset).Find(&listTenant)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return listTenant, nil
 }

@@ -16,6 +16,56 @@ const docTemplate = `{
     "basePath": "{{.BasePath}}",
     "paths": {
         "/api/v1/tenant": {
+            "get": {
+                "description": "Busca um tenant no sistema usando o UUID ou o Documento (CNPJ/CPF). Pelo menos um dos dois campos deve ser fornecido.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "Busca um Tenant",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "UUID do tenant a ser buscado. (Ex: 8871abf3-ed11-4770-b986-e8d98d022d4f)",
+                        "name": "uuid",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Documento (CNPJ/CPF) do tenant a ser buscado. (Ex: 12345678901234)",
+                        "name": "document",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tenant encontrado com sucesso.",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TenantResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida (UUID inválido, ou nenhum dos campos 'uuid'/'document' fornecido).",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "404": {
+                        "description": "Tenant não encontrado com os dados fornecidos.",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor.",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Registra um novo tenant (empresa/organização) no sistema.",
                 "consumes": [
@@ -54,6 +104,56 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflito (o 'document' fornecido já está em uso).",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor.",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/tenant/list": {
+            "get": {
+                "description": "Retorna uma lista paginada de todos os tenants registrados no sistema.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Tenant"
+                ],
+                "summary": "Lista Tenants",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "O número da página a ser retornada (deve ser \u003e= 1).",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "O número de itens por página (máximo 100).",
+                        "name": "pageSize",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de tenants retornada com sucesso.",
+                        "schema": {
+                            "$ref": "#/definitions/dto.TenantsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida (parâmetros de paginação ausentes ou inválidos, ou pageSize \u003e 100).",
                         "schema": {
                             "$ref": "#/definitions/rest_err.RestErr"
                         }
@@ -108,6 +208,23 @@ const docTemplate = `{
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.TenantsResponse": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "tenants": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.TenantResponse"
+                    }
                 }
             }
         },

@@ -6,7 +6,7 @@ CREATE TABLE tenant (
                         name VARCHAR(255) NOT NULL,
 
     -- Documento (CNPJ/CPF, etc.). Deve ser único na tabela e não pode ser nulo.
-                        document VARCHAR(18) NOT NULL UNIQUE,
+                        document VARCHAR(100) NOT NULL UNIQUE,
 
     -- Status de Atividade (booleano, padrão é 'true')
                         live BOOLEAN NOT NULL DEFAULT TRUE,

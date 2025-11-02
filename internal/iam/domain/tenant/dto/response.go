@@ -14,3 +14,9 @@ type TenantResponse struct {
 	CreateAt time.Time `json:"createAt"`
 	UpdateAt time.Time `json:"updateAt"`
 }
+
+type TenantsResponse struct {
+	Tenants []TenantResponse `json:"tenants"`
+	Page    int              `json:"page"`
+	Size    int              `json:"size"`
+}
