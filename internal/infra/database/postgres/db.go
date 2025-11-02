@@ -65,6 +65,25 @@ func GetDB() *gorm.DB {
 	return db
 }
 
+// Close encerra a conexão com o banco de dados e permite nova inicialização.
+func Close() {
+	if db == nil {
+		return
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Printf("[DATABASE] erro ao obter *sql.DB para fechamento: %v", err)
+	} else {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("[DATABASE] erro ao fechar conexão com banco: %v", err)
+		}
+	}
+
+	db = nil
+	once = sync.Once{}
+}
+
 // buildDSN monta a string de conexão (Data Source Name) para o PostgreSQL
 // utilizando as variáveis de ambiente definidas no pacote env.
 func buildDSN() string {

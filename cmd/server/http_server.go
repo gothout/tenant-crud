@@ -1,0 +1,52 @@
+package server
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
+
+	"tenant-crud/cmd/server/routes"
+	"tenant-crud/internal/iam/domain/di"
+)
+
+type HTTPServer struct {
+	server *http.Server
+}
+
+func NewHTTPServer(container *di.Container) *HTTPServer {
+	router := routes.SetupRouter(container)
+	port := fmt.Sprintf(":%s", viper.GetString("server.http.port"))
+
+	return &HTTPServer{server: &http.Server{
+		Addr:              port,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+	}}
+}
+
+func (s *HTTPServer) Start() error {
+	log.Printf("[SERVER] Iniciando servidor na porta %s", s.server.Addr)
+	if err := s.server.ListenAndServe(); err != nil {
+		if errors.Is(err, http.ErrServerClosed) {
+			log.Println("[SERVER] Servidor finalizado.")
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *HTTPServer) Shutdown(ctx context.Context) error {
+	log.Println("[SERVER] Encerrando servidor...")
+	return s.server.Shutdown(ctx)
+}
+
+func SetupRouter(container *di.Container) *gin.Engine {
+	return routes.SetupRouter(container)
+}
