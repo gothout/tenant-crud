@@ -2,7 +2,6 @@ package migrations
 
 import (
 	"embed"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -91,7 +90,7 @@ func loadFiles(category string) ([]migrationFile, error) {
 
 	entries, err := embeddedMigrations.ReadDir(dir)
 	if err != nil {
-		if errors.Is(err, embed.ErrNotFound) {
+		if strings.Contains(err.Error(), "no such file or directory") {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("falha ao ler diretório de migrations %s: %w", dir, err)

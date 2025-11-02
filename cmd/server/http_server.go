@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 
 	"tenant-crud/cmd/server/routes"
@@ -45,8 +44,4 @@ func (s *HTTPServer) Start() error {
 func (s *HTTPServer) Shutdown(ctx context.Context) error {
 	log.Println("[SERVER] Encerrando servidor...")
 	return s.server.Shutdown(ctx)
-}
-
-func SetupRouter(container *di.Container) *gin.Engine {
-	return routes.SetupRouter(container)
 }
