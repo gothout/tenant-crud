@@ -27,3 +27,11 @@ func (s *impl) Read(ctx context.Context, m model.Tenant) (model.Tenant, error) {
 func (s *impl) List(ctx context.Context, page, pageSize int) ([]model.Tenant, error) {
 	return s.repository.List(ctx, page, pageSize)
 }
+
+func (s *impl) Update(ctx context.Context, m *model.Tenant) (model.Tenant, error) {
+	return s.repository.Update(ctx, m)
+}
+
+func (s *impl) Delete(ctx context.Context, m model.Tenant) error {
+	return s.repository.Delete(ctx, m)
+}

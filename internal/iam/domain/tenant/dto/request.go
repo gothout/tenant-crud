@@ -15,3 +15,9 @@ type ListTenantRequest struct {
 	Page     int `form:"page"`
 	PageSize int `form:"size"`
 }
+
+type UpdateTenantRequest struct {
+	Name     string `json:"name"`
+	Document string `json:"document"`
+	Live     *bool  `json:"live"`
+}

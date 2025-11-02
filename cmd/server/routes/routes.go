@@ -1,10 +1,12 @@
 package routes
 
 import (
+	"fmt"
+	"os"
 	iamDomainContainer "tenant-crud/internal/iam/domain/di"
 
 	"github.com/gin-gonic/gin"
-
+	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -12,6 +14,21 @@ import (
 )
 
 func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
+	env := viper.GetString("environment")
+	// 1. Configuração do modo Gin
+	switch env {
+	case "dev":
+		gin.SetMode(gin.DebugMode)
+	case "prod":
+		gin.SetMode(gin.ReleaseMode)
+	case "":
+		fmt.Println("WARNING: 'environment' not set in config. Defaulting to 'dev' mode.")
+		gin.SetMode(gin.DebugMode)
+	default:
+		fmt.Printf("ERROR: Invalid environment value '%s'. Must be 'dev' or 'prod'.\n", env)
+		os.Exit(1)
+	}
+
 	r := gin.Default()
 
 	// Acessível em http://localhost:8080/doc/index.html

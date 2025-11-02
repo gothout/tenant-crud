@@ -204,3 +204,138 @@ func (ctrl *impl) List(c *gin.Context) {
 		Size:    req.PageSize,
 	})
 }
+
+// @Summary      Atualiza um Tenant
+// @Description  Atualiza dados de um tenant existente. O tenant a ser atualizado é identificado pelo UUID no path.
+// @Tags         Tenant
+// @Accept       json
+// @Produce      json
+//
+// @Param        uuid path string true "UUID do tenant a ser atualizado."
+// @Param        request body dto.UpdateTenantRequest true "Campos do tenant a serem atualizados. Apenas os campos presentes serão modificados."
+//
+// @Success      200  {object}  dto.TenantResponse  "Tenant atualizado com sucesso."
+// @Failure      400  {object}  rest_err.RestErr    "Requisição inválida (corpo JSON mal formatado, UUID inválido ou dados de entrada inválidos)."
+// @Failure      404  {object}  rest_err.RestErr    "Tenant não encontrado para o UUID fornecido."
+// @Failure      409  {object}  rest_err.RestErr    "Conflito (o novo 'document' fornecido já está em uso por outro tenant)."
+// @Failure      500  {object}  rest_err.RestErr    "Erro interno do servidor."
+//
+// @Router       /api/v1/tenant/{uuid} [patch]
+func (ctrl *impl) Update(c *gin.Context) {
+	uuidStr := c.Param("uuid")
+	tenantUUID, err := uuid.Parse(uuidStr)
+	if err != nil {
+		restError := rest_err.NewBadRequestError("O UUID fornecido na URL não é um formato válido.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	var request dto.UpdateTenantRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		restError := rest_err.NewBadRequestError("Corpo JSON inválido ou mal formatado.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	uTenant := model.Tenant{
+		UUID:     tenantUUID,
+		Document: request.Document,
+		Live:     *request.Live,
+		Name:     request.Name,
+		UpdateAt: time.Now().UTC(),
+	}
+
+	if request.Live != nil {
+		uTenant.Live = *request.Live
+	}
+
+	tenantUpdated, err := ctrl.service.Update(c.Request.Context(), &uTenant)
+
+	if err != nil {
+		var restError *rest_err.RestErr
+
+		switch err {
+		case tenant.ErrNotFound:
+			restError = rest_err.NewNotFoundError(tenant.ErrNotFound.Error())
+		case tenant.ErrDocumentDuplicated:
+			restError = rest_err.NewConflictValidationError("O novo documento fornecido já está em uso por outro tenant.", nil)
+		case tenant.ErrInvalidInput:
+			restError = rest_err.NewBadRequestError(tenant.ErrInvalidInput.Error())
+		default:
+			restError = rest_err.NewInternalServerError("Falha ao atualizar tenant", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	c.JSON(http.StatusOK, &dto.TenantResponse{
+		UUID:     tenantUpdated.UUID,
+		Name:     tenantUpdated.Name,
+		Document: tenantUpdated.Document,
+		Live:     tenantUpdated.Live,
+		CreateAt: tenantUpdated.CreateAt,
+		UpdateAt: tenantUpdated.UpdateAt,
+	})
+}
+
+// @Summary      Deleta um Tenant
+// @Description  Exclui permanentemente um tenant no sistema usando o UUID ou o Documento (CNPJ/CPF). Pelo menos um dos dois campos deve ser fornecido.
+// @Tags         Tenant
+// @Produce      json
+//
+// @Param        uuid query string false "UUID do tenant a ser excluído. (Ex: 8871abf3-ed11-4770-b986-e8d98d022d4f)"
+// @Param        document query string false "Documento (CNPJ/CPF) do tenant a ser excluído. (Ex: 12345678901234)"
+//
+// @Success      204  {string} string "Tenant excluído com sucesso (No Content)."
+// @Failure      400  {object}  rest_err.RestErr    "Requisição inválida (UUID inválido, ou nenhum dos campos 'uuid'/'document' fornecido)."
+// @Failure      404  {object}  rest_err.RestErr    "Tenant não encontrado com os dados fornecidos."
+// @Failure      500  {object}  rest_err.RestErr    "Erro interno do servidor."
+//
+// @Router       /api/v1/tenant [delete]
+func (ctrl *impl) Delete(c *gin.Context) {
+	var req dto.ReadTenantRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		restError := rest_err.NewBadRequestError("Parâmetros de busca inválidos.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	if req.UUID == "" && req.Document == "" {
+		restError := rest_err.NewBadRequestError("É necessário fornecer o 'uuid' OU o 'document' para a exclusão.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	var tenantUUID uuid.UUID
+	if req.UUID != "" {
+		parsedUUID, err := uuid.Parse(req.UUID)
+		if err != nil {
+			restError := rest_err.NewBadRequestError("O UUID fornecido não é um formato válido.")
+			c.JSON(restError.Code, restError)
+			return
+		}
+		tenantUUID = parsedUUID
+	}
+
+	err := ctrl.service.Delete(c.Request.Context(), model.Tenant{
+		UUID:     tenantUUID,
+		Document: req.Document,
+	})
+
+	if err != nil {
+		var restError *rest_err.RestErr
+		switch err {
+		case tenant.ErrNotFound:
+			restError = rest_err.NewNotFoundError(tenant.ErrNotFound.Error())
+		case tenant.ErrInvalidInput:
+			restError = rest_err.NewBadRequestError(tenant.ErrInvalidInput.Error())
+		default:
+			restError = rest_err.NewInternalServerError("Falha ao excluir tenant", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}

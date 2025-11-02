@@ -7,6 +7,7 @@ import (
 	"strings"
 	"tenant-crud/internal/iam/domain/tenant"
 	"tenant-crud/internal/iam/domain/tenant/model"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -76,4 +77,66 @@ func (r *impl) List(ctx context.Context, page, pageSize int) ([]model.Tenant, er
 	}
 
 	return listTenant, nil
+}
+
+func (r *impl) Update(ctx context.Context, m *model.Tenant) (model.Tenant, error) {
+	if m.UUID == uuid.Nil {
+		return model.Tenant{}, tenant.ErrInvalidInput
+	}
+
+	updateModel := model.Tenant{
+		Name:     m.Name,
+		Document: m.Document,
+		Live:     m.Live,
+		UpdateAt: time.Now().UTC(),
+	}
+	result := r.db.WithContext(ctx).
+		Where("uuid = ?", m.UUID).
+		Select("Name", "Document", "Live", "UpdateAt").
+		Updates(updateModel)
+
+	if result.Error != nil {
+		if strings.Contains(result.Error.Error(), "duplicate key value violates unique constraint") {
+			return model.Tenant{}, tenant.ErrDocumentDuplicated
+		}
+		return model.Tenant{}, result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		existingTenant, err := r.Read(ctx, model.Tenant{UUID: m.UUID})
+		if err != nil {
+			if errors.Is(err, tenant.ErrNotFound) {
+				return model.Tenant{}, tenant.ErrNotFound
+			}
+			return model.Tenant{}, fmt.Errorf("falha ao verificar se o tenant existe: %w", err)
+		}
+
+		return existingTenant, nil
+	}
+	updatedTenant, err := r.Read(ctx, model.Tenant{UUID: m.UUID})
+	if err != nil {
+		return updatedTenant, fmt.Errorf("falha ao ler tenant atualizado: %w", err)
+	}
+
+	return updatedTenant, nil
+}
+
+func (r *impl) Delete(ctx context.Context, m model.Tenant) error {
+	if m.UUID == uuid.Nil && m.Document == "" {
+		return tenant.ErrInvalidInput
+	}
+	query := r.db.WithContext(ctx)
+	if m.UUID != uuid.Nil {
+		query = query.Where("uuid = ?", m.UUID)
+	} else {
+		query = query.Where("document = ?", m.Document)
+	}
+	result := query.Delete(&model.Tenant{})
+	if result.Error != nil {
+		return fmt.Errorf("falha ao deletar tenant: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return tenant.ErrNotFound
+	}
+	return nil
 }

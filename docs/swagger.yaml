@@ -38,6 +38,15 @@ definitions:
           $ref: '#/definitions/dto.TenantResponse'
         type: array
     type: object
+  dto.UpdateTenantRequest:
+    properties:
+      document:
+        type: string
+      live:
+        type: boolean
+      name:
+        type: string
+    type: object
   rest_err.Causes:
     properties:
       field:
@@ -62,6 +71,41 @@ info:
   contact: {}
 paths:
   /api/v1/tenant:
+    delete:
+      description: Exclui permanentemente um tenant no sistema usando o UUID ou o
+        Documento (CNPJ/CPF). Pelo menos um dos dois campos deve ser fornecido.
+      parameters:
+      - description: 'UUID do tenant a ser excluído. (Ex: 8871abf3-ed11-4770-b986-e8d98d022d4f)'
+        in: query
+        name: uuid
+        type: string
+      - description: 'Documento (CNPJ/CPF) do tenant a ser excluído. (Ex: 12345678901234)'
+        in: query
+        name: document
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Tenant excluído com sucesso (No Content).
+          schema:
+            type: string
+        "400":
+          description: Requisição inválida (UUID inválido, ou nenhum dos campos 'uuid'/'document'
+            fornecido).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "404":
+          description: Tenant não encontrado com os dados fornecidos.
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno do servidor.
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Deleta um Tenant
+      tags:
+      - Tenant
     get:
       description: Busca um tenant no sistema usando o UUID ou o Documento (CNPJ/CPF).
         Pelo menos um dos dois campos deve ser fornecido.
@@ -129,6 +173,53 @@ paths:
           schema:
             $ref: '#/definitions/rest_err.RestErr'
       summary: Cria um novo Tenant
+      tags:
+      - Tenant
+  /api/v1/tenant/{uuid}:
+    patch:
+      consumes:
+      - application/json
+      description: Atualiza dados de um tenant existente. O tenant a ser atualizado
+        é identificado pelo UUID no path.
+      parameters:
+      - description: UUID do tenant a ser atualizado.
+        in: path
+        name: uuid
+        required: true
+        type: string
+      - description: Campos do tenant a serem atualizados. Apenas os campos presentes
+          serão modificados.
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Tenant atualizado com sucesso.
+          schema:
+            $ref: '#/definitions/dto.TenantResponse'
+        "400":
+          description: Requisição inválida (corpo JSON mal formatado, UUID inválido
+            ou dados de entrada inválidos).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "404":
+          description: Tenant não encontrado para o UUID fornecido.
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "409":
+          description: Conflito (o novo 'document' fornecido já está em uso por outro
+            tenant).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno do servidor.
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Atualiza um Tenant
       tags:
       - Tenant
   /api/v1/tenant/list:

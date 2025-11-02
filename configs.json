@@ -1,4 +1,5 @@
 {
+  "environment": "dev",
   "server": {
     "http": {
       "port": "8080"
@@ -6,13 +7,12 @@
   },
   "databases": {
     "postgres": {
-      "host": "127.0.0.1",
+      "host": "ep-empty-union-aczwtars-pooler.sa-east-1.aws.neon.tech",
       "port": 5432,
-      "user": "admin",
-      "pwd": "p4ssW0rd",
-      "db_name": "db_Base",
-      "ssl_mode": "disable"
+      "user": "neondb_owner",
+      "pwd": "npg_VU51mAGlbaSJ",
+      "db_name": "neondb",
+      "ssl_mode": "require"
     }
-  },
-  "environment": "dev"
+  }
 }
