@@ -1,8 +1,13 @@
 package main
 
-import "tenant-crud/cmd/bootstrap"
+import (
+	"log"
+
+	"tenant-crud/cmd/cli"
+)
 
 func main() {
-	boot, _ := bootstrap.New()
-	boot.Start()
+	if err := cli.Execute(); err != nil {
+		log.Fatal(err)
+	}
 }
