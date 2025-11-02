@@ -1,8 +1,10 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -14,6 +16,7 @@ import (
 // Application armazena as dependências centrais da aplicação.
 type Application struct {
 	container *iamContainer.Container
+	server    *server.HTTPServer
 }
 
 // Environment configura e lê o arquivo de configuração (configs.json)
@@ -45,10 +48,27 @@ func New() (*Application, error) {
 
 	return &Application{
 		container: container,
+		server:    server.NewHTTPServer(container),
 	}, nil
 }
 
-func (a *Application) Start() {
+func (a *Application) Start(ctx context.Context) error {
 	log.Println("[BOOTSTRAP] Iniciando servidor no ambiente:", viper.GetString("environment"))
-	server.StartServer(a.container)
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- a.server.Start()
+	}()
+
+	select {
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := a.server.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("falha ao encerrar servidor: %w", err)
+		}
+		return <-errCh
+	case err := <-errCh:
+		return err
+	}
 }
