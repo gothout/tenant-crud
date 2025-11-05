@@ -40,7 +40,6 @@ func (r *impl) Create(ctx context.Context, m model.Tenant) (model.Tenant, error)
 
 func (r *impl) Read(ctx context.Context, m model.Tenant) (model.Tenant, error) {
 	query := r.db.WithContext(ctx).Model(&model.Tenant{})
-
 	if m.UUID != uuid.Nil {
 		query = query.First(&m, "uuid = ?", m.UUID)
 	} else if m.Document != "" {
@@ -48,21 +47,18 @@ func (r *impl) Read(ctx context.Context, m model.Tenant) (model.Tenant, error) {
 	} else {
 		return model.Tenant{}, tenant.ErrInvalidInput
 	}
-
 	if query.Error != nil {
 		if errors.Is(query.Error, gorm.ErrRecordNotFound) {
 			return model.Tenant{}, tenant.ErrNotFound
 		}
 		return model.Tenant{}, fmt.Errorf("erro ao ler tenant: %w", query.Error)
 	}
-
 	return m, nil
 }
 
 func (r *impl) List(ctx context.Context, page, pageSize int) ([]model.Tenant, error) {
 	var listTenant []model.Tenant
 	query := r.db.WithContext(ctx).Model(&model.Tenant{})
-
 	if page <= 0 {
 		page = 1
 	}
@@ -70,12 +66,10 @@ func (r *impl) List(ctx context.Context, page, pageSize int) ([]model.Tenant, er
 		pageSize = 10
 	}
 	offset := (page - 1) * pageSize
-
 	result := query.Limit(pageSize).Offset(offset).Find(&listTenant)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-
 	return listTenant, nil
 }
 

@@ -41,11 +41,12 @@ func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
 	return r
 }
 
-// Assinatura atualizada (sem o 'r *gin.Engine')
 func SetupApiRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainContainer.Container) {
 	v1Group := routerGroup.Group("/v1")
 
-	// Tenants
+	// iamDomainsRoutes
 	tController := iamDomainContainer.GetTenantContainer().GetTenantController()
+	uController := iamDomainContainer.GetUserContainer().GetUserController()
 	tController.RegisterRoutes(v1Group)
+	uController.RegisterRoutes(v1Group)
 }

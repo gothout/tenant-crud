@@ -12,6 +12,23 @@ definitions:
     - live
     - name
     type: object
+  dto.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        minLength: 8
+        type: string
+      role:
+        $ref: '#/definitions/model.UserRole'
+    required:
+    - email
+    - name
+    - password
+    - role
+    type: object
   dto.TenantResponse:
     properties:
       createAt:
@@ -47,6 +64,35 @@ definitions:
       name:
         type: string
     type: object
+  dto.UserResponse:
+    properties:
+      create_at:
+        type: string
+      email:
+        type: string
+      live:
+        type: boolean
+      name:
+        type: string
+      role:
+        $ref: '#/definitions/model.UserRole'
+      tenant_uuid:
+        type: string
+      update_at:
+        type: string
+      uuid:
+        type: string
+    type: object
+  model.UserRole:
+    enum:
+    - SYSTEM_ADMIN
+    - TENANT_ADMIN
+    - TENANT_USER
+    type: string
+    x-enum-varnames:
+    - RoleSystemAdmin
+    - RoleTenantAdmin
+    - RoleTenantUser
   rest_err.Causes:
     properties:
       field:
@@ -257,4 +303,50 @@ paths:
       summary: Lista Tenants
       tags:
       - Tenant
+  /api/v1/user/{identifier}:
+    post:
+      consumes:
+      - application/json
+      description: Registra um novo usuário no sistema, associado a um tenant (empresa/organização).
+      parameters:
+      - description: Identificador (UUID ou Documento) do Tenant ao qual o usuário
+          será associado.
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Objeto do usuário que precisa ser criado.
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Usuário criado com sucesso.
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Requisição inválida (corpo JSON mal formatado, dados de entrada
+            inválidos, ou 'identifier' do tenant ausente).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "404":
+          description: Tenant não encontrado (o 'identifier' fornecido não corresponde
+            a nenhum tenant existente).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "409":
+          description: Conflito (o 'email' fornecido já está em uso).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno do servidor.
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Cria um novo Usuário
+      tags:
+      - User
 swagger: "2.0"
