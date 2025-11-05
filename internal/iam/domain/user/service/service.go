@@ -7,4 +7,5 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, m model.User, tenantIdentifier string) (model.User, error)
+	Read(ctx context.Context, m model.User) (model.User, error)
 }

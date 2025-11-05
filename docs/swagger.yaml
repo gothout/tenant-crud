@@ -304,6 +304,43 @@ paths:
       tags:
       - Tenant
   /api/v1/user/{identifier}:
+    get:
+      description: Obtém os detalhes de um usuário específico, buscando pelo UUID
+        ou pelo email.
+      parameters:
+      - description: Identificador (UUID ou Email) do Usuário a ser buscado.
+        in: path
+        name: identifier
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Usuário encontrado com sucesso.
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Requisição inválida (o 'identifier' do usuário está ausente
+            ou é inválido).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "404":
+          description: Não encontrado (o recurso solicitado não foi localizado).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "409":
+          description: 'Conflito (o serviço retornou um erro de conflito, ex: ''email
+            duplicado'').'
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno do servidor.
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Busca um usuário
+      tags:
+      - User
     post:
       consumes:
       - application/json

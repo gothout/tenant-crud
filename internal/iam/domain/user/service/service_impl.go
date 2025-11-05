@@ -70,3 +70,7 @@ func (s *impl) Create(ctx context.Context, m model.User, tenantIdentifier string
 	}
 	return createdUser, nil
 }
+
+func (s *impl) Read(ctx context.Context, m model.User) (model.User, error) {
+	return s.repository.Read(ctx, m)
+}

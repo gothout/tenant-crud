@@ -283,6 +283,57 @@ const docTemplate = `{
             }
         },
         "/api/v1/user/{identifier}": {
+            "get": {
+                "description": "Obtém os detalhes de um usuário específico, buscando pelo UUID ou pelo email.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Busca um usuário",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identificador (UUID ou Email) do Usuário a ser buscado.",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Usuário encontrado com sucesso.",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida (o 'identifier' do usuário está ausente ou é inválido).",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "404": {
+                        "description": "Não encontrado (o recurso solicitado não foi localizado).",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflito (o serviço retornou um erro de conflito, ex: 'email duplicado').",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno do servidor.",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Registra um novo usuário no sistema, associado a um tenant (empresa/organização).",
                 "consumes": [
