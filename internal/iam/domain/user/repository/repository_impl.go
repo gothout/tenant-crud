@@ -61,3 +61,20 @@ func (r *impl) Read(ctx context.Context, m model.User) (model.User, error) {
 	}
 	return m, nil
 }
+
+func (r *impl) List(ctx context.Context, page, pageSize int) ([]model.User, error) {
+	var users []model.User
+	query := r.db.WithContext(ctx).Model(&users)
+	if page <= 0 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+	result := query.Limit(pageSize).Offset(offset).Find(&users)
+	if result.Error != nil {
+		return users, result.Error
+	}
+	return users, nil
+}

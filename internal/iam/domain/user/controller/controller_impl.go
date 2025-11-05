@@ -3,6 +3,7 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"strconv"
 	"tenant-crud/internal/iam/domain/user"
 	"tenant-crud/internal/iam/domain/user/dto"
 	"tenant-crud/internal/iam/domain/user/model"
@@ -22,6 +23,12 @@ func New(service service.Service) Controller {
 		service: service,
 	}
 }
+
+const (
+	defaultPage = 1   // Página padrão se nenhuma for informada
+	defaultSize = 10  // Tamanho padrão se nenhum for informado
+	maxSize     = 100 // Tamanho máximo permitido
+)
 
 // @Summary      Cria um novo Usuário
 // @Description  Registra um novo usuário no sistema, associado a um tenant (empresa/organização).
@@ -162,4 +169,66 @@ func (ctrl *impl) Read(c *gin.Context) {
 		UpdateAt:   uRead.UpdateAt,
 	}
 	c.JSON(http.StatusOK, response)
+}
+
+// @Summary      Lista usuários
+// @Description  Retorna uma lista paginada de usuários.
+// @Tags         User
+// @Produce      json
+//
+// @Param        page query int false "Número da página para paginação." default(1)
+// @Param        size query int false "Número de itens por página." default(10) maximum(100)
+//
+// @Success      200  {object}  dto.UserListResponse  "Lista de usuários recuperada com sucesso."
+// @Failure      400  {object}  rest_err.RestErr    "Requisição inválida (parâmetros 'page' ou 'size' inválidos, ou erro ao listar)."
+//
+// @Router       /api/v1/user/list [get]
+func (ctrl *impl) List(c *gin.Context) {
+	var (
+		page int = defaultPage // Define o padrão
+		size int = defaultSize // Define o padrão
+		err  error
+	)
+	pageQuery := c.Query("page")
+	if pageQuery != "" {
+		page, err = strconv.Atoi(pageQuery)
+		if err != nil || page <= 0 {
+			restError := rest_err.NewBadRequestError("parâmetro 'page' inválido: deve ser um inteiro positivo")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	}
+
+	sizeQuery := c.Query("size")
+	if sizeQuery != "" {
+		size, err = strconv.Atoi(sizeQuery)
+		if err != nil || size <= 0 {
+			restError := rest_err.NewBadRequestError("parâmetro 'size' inválido: deve ser um inteiro positivo")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	}
+	if size > maxSize {
+		size = maxSize
+	}
+
+	users, err := ctrl.service.List(c.Request.Context(), page, size)
+	if err != nil {
+		restError := rest_err.NewBadRequestError("erro ao listar usuarios")
+		c.JSON(restError.Code, restError)
+	}
+
+	lUser := make([]dto.UserResponse, len(users))
+	for i, u := range users {
+		lUser[i] = dto.UserResponse{
+			UUID:       u.UUID,
+			TenantUUID: u.TenantUUID,
+			Name:       u.Name,
+			Email:      u.Email,
+			Role:       u.Role,
+			CreateAt:   u.CreateAt,
+			UpdateAt:   u.UpdateAt,
+		}
+	}
+	c.JSON(http.StatusOK, &dto.UserListResponse{lUser})
 }

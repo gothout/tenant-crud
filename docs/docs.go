@@ -282,6 +282,49 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/user/list": {
+            "get": {
+                "description": "Retorna uma lista paginada de usuários.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Lista usuários",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Número da página para paginação.",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Número de itens por página.",
+                        "name": "size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de usuários recuperada com sucesso.",
+                        "schema": {
+                            "$ref": "#/definitions/dto.UserListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Requisição inválida (parâmetros 'page' ou 'size' inválidos, ou erro ao listar).",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/user/{identifier}": {
             "get": {
                 "description": "Obtém os detalhes de um usuário específico, buscando pelo UUID ou pelo email.",
@@ -494,6 +537,17 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "dto.UserListResponse": {
+            "type": "object",
+            "properties": {
+                "users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/dto.UserResponse"
+                    }
                 }
             }
         },

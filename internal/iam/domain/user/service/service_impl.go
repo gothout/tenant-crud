@@ -74,3 +74,7 @@ func (s *impl) Create(ctx context.Context, m model.User, tenantIdentifier string
 func (s *impl) Read(ctx context.Context, m model.User) (model.User, error) {
 	return s.repository.Read(ctx, m)
 }
+
+func (s *impl) List(ctx context.Context, page, pageSize int) ([]model.User, error) {
+	return s.repository.List(ctx, page, pageSize)
+}

@@ -8,4 +8,5 @@ import (
 type Repository interface {
 	Create(ctx context.Context, m model.User) (model.User, error)
 	Read(ctx context.Context, m model.User) (model.User, error)
+	List(ctx context.Context, page, pageSize int) ([]model.User, error)
 }

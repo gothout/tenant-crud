@@ -64,6 +64,13 @@ definitions:
       name:
         type: string
     type: object
+  dto.UserListResponse:
+    properties:
+      users:
+        items:
+          $ref: '#/definitions/dto.UserResponse'
+        type: array
+    type: object
   dto.UserResponse:
     properties:
       create_at:
@@ -384,6 +391,36 @@ paths:
           schema:
             $ref: '#/definitions/rest_err.RestErr'
       summary: Cria um novo Usuário
+      tags:
+      - User
+  /api/v1/user/list:
+    get:
+      description: Retorna uma lista paginada de usuários.
+      parameters:
+      - default: 1
+        description: Número da página para paginação.
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Número de itens por página.
+        in: query
+        maximum: 100
+        name: size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Lista de usuários recuperada com sucesso.
+          schema:
+            $ref: '#/definitions/dto.UserListResponse'
+        "400":
+          description: Requisição inválida (parâmetros 'page' ou 'size' inválidos,
+            ou erro ao listar).
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Lista usuários
       tags:
       - User
 swagger: "2.0"
