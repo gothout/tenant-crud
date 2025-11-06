@@ -232,3 +232,124 @@ func (ctrl *impl) List(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, &dto.UserListResponse{lUser})
 }
+
+// @Summary      Atualiza um usuário
+// @Description  Atualiza parcialmente os detalhes de um usuário existente (nome, email, senha ou role).
+// @Description  Apenas os campos fornecidos no corpo do JSON serão atualizados.
+// @Tags         User
+// @Accept       json
+// @Produce      json
+//
+// @Param        identifier path string true "Identificador (UUID ou Documento) do usuarioa ser atualizado."
+// @Param        request body dto.UpdateUserRequest true "Campos do usuário que precisam ser atualizados."
+//
+// @Success      200  {object}  dto.UserResponse  "Usuário atualizado com sucesso."
+// @Failure      400  {object}  rest_err.RestErr    "Requisição inválida (UUID mal formatado, corpo JSON mal formatado ou falha na validação)."
+// @Failure      404  {object}  rest_err.RestErr    "Não encontrado (o 'identifier' do usuário não corresponde a nenhum usuário existente)."
+// @Failure      409  {object}  rest_err.RestErr    "Conflito (o 'email' fornecido já está em uso por outro usuário)."
+// @Failure      500  {object}  rest_err.RestErr    "Erro interno do servidor."
+//
+// @Router       /api/v1/user/{identifier} [patch]
+func (ctrl *impl) Update(c *gin.Context) {
+	userIdentifier := c.Param("identifier")
+	if userIdentifier == "" {
+		restError := rest_err.NewBadRequestError("user identifier is required in URL path")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	var req dto.UpdateUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		restError := rest_err.NewBadRequestError("invalid json body or validation failed")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	if req.Name == "" && req.Email == "" && req.Password == "" && req.Role == "" {
+		restError := rest_err.NewBadRequestError("at least one field must be provided for update")
+		c.JSON(restError.Code, restError)
+		return
+	}
+	uptUser := &model.User{
+		Name:         req.Name,
+		Email:        req.Email,
+		PasswordHash: req.Password,
+		Role:         req.Role,
+	}
+
+	newUser, err := ctrl.service.Update(c.Request.Context(), *uptUser, userIdentifier)
+	if err != nil {
+		var restError *rest_err.RestErr
+		switch {
+		case errors.Is(err, user.ErrNotFound):
+			restError = rest_err.NewNotFoundError(err.Error())
+
+		case errors.Is(err, user.ErrEmailDuplicated):
+			restError = rest_err.NewConflictValidationError(err.Error(), nil)
+
+		case errors.Is(err, user.ErrInvalidInput):
+			restError = rest_err.NewBadRequestError(err.Error())
+
+		default:
+			restError = rest_err.NewInternalServerError("internal server error", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	respose := dto.UserResponse{
+		UUID:       newUser.UUID,
+		TenantUUID: newUser.TenantUUID,
+		Name:       newUser.Name,
+		Email:      newUser.Email,
+		Role:       newUser.Role,
+		CreateAt:   newUser.CreateAt,
+		UpdateAt:   newUser.UpdateAt,
+	}
+
+	c.JSON(http.StatusOK, respose)
+}
+
+// @Summary      Remove um usuário
+// @Description  Exclui permanentemente um usuário existente do sistema, identificado pelo UUID ou Email.
+// @Description  Esta operação não é reversível. Se o usuário não existir, retorna erro 404.
+// @Tags         User
+// @Produce      json
+//
+// @Param        identifier path string true "Identificador (UUID ou Email) do usuário a ser removido."
+//
+// @Success      204  "Usuário removido com sucesso (sem conteúdo no corpo da resposta)."
+// @Failure      400  {object}  rest_err.RestErr  "Requisição inválida (identificador ausente ou mal formatado)."
+// @Failure      404  {object}  rest_err.RestErr  "Não encontrado (o usuário especificado não existe)."
+// @Failure      500  {object}  rest_err.RestErr  "Erro interno do servidor."
+//
+// @Router       /api/v1/user/{identifier} [delete]
+func (ctrl *impl) Delete(c *gin.Context) {
+	userIdentifier := c.Param("identifier")
+	if userIdentifier == "" {
+		restError := rest_err.NewBadRequestError("user identifier is required in URL path")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	err := ctrl.service.Delete(c.Request.Context(), userIdentifier)
+	if err != nil {
+		var restError *rest_err.RestErr
+		switch {
+		case errors.Is(err, user.ErrNotFound):
+			restError = rest_err.NewNotFoundError(err.Error())
+
+		case errors.Is(err, user.ErrInvalidInput):
+			restError = rest_err.NewBadRequestError(err.Error())
+
+		default:
+			restError = rest_err.NewInternalServerError("internal server error", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, nil)
+}

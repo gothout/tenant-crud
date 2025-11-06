@@ -8,3 +8,10 @@ type CreateUserRequest struct {
 	Password string         `json:"password" binding:"required,min=8"`
 	Role     model.UserRole `json:"role" binding:"required"`
 }
+
+type UpdateUserRequest struct {
+	Name     string         `json:"name"`
+	Email    string         `json:"email"`
+	Password string         `json:"password"`
+	Role     model.UserRole `json:"role"`
+}

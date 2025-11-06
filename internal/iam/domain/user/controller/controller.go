@@ -7,6 +7,8 @@ type Controller interface {
 	Create(c *gin.Context)
 	Read(c *gin.Context)
 	List(c *gin.Context)
+	Update(c *gin.Context)
+	Delete(c *gin.Context)
 }
 
 func (ctrl *impl) RegisterRoutes(routerGroup *gin.RouterGroup) {
@@ -14,4 +16,6 @@ func (ctrl *impl) RegisterRoutes(routerGroup *gin.RouterGroup) {
 	group.POST("/:identifier", ctrl.Create)
 	group.GET("/:identifier", ctrl.Read)
 	group.GET("/list", ctrl.List)
+	group.PATCH("/:identifier", ctrl.Update)
+	group.DELETE("/:identifier", ctrl.Delete)
 }

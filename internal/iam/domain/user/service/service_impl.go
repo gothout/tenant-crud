@@ -78,3 +78,63 @@ func (s *impl) Read(ctx context.Context, m model.User) (model.User, error) {
 func (s *impl) List(ctx context.Context, page, pageSize int) ([]model.User, error) {
 	return s.repository.List(ctx, page, pageSize)
 }
+
+func (s *impl) Update(ctx context.Context, m model.User, userIdentifier string) (model.User, error) {
+	err := uuid.Validate(userIdentifier)
+	var srcUser model.User
+	if err != nil {
+		srcUser = model.User{
+			Email: userIdentifier,
+		}
+	} else {
+		srcUser = model.User{
+			UUID: uuid.MustParse(userIdentifier),
+		}
+	}
+	oldUser, err := s.Read(ctx, srcUser)
+	if err != nil {
+		return model.User{}, err
+	}
+	var pwdHash string
+	if m.PasswordHash != "" {
+		pwdHash, err = util.Hash(m.PasswordHash)
+		if err != nil {
+			return model.User{}, fmt.Errorf("erro ao gerar hash de senha: %w", err)
+		}
+	} else {
+		pwdHash = oldUser.PasswordHash
+	}
+	newUser := model.User{
+		UUID:         oldUser.UUID,
+		Name:         m.Name,
+		Email:        m.Email,
+		PasswordHash: pwdHash,
+		Role:         m.Role,
+		Live:         m.Live,
+		UpdateAt:     time.Now().UTC(),
+	}
+	updatedUser, err := s.repository.Update(ctx, newUser)
+	if err != nil {
+		return updatedUser, err
+	}
+	return updatedUser, nil
+}
+
+func (s *impl) Delete(ctx context.Context, userIdentifier string) error {
+	err := uuid.Validate(userIdentifier)
+	var srcUser model.User
+	if err != nil {
+		srcUser = model.User{
+			Email: userIdentifier,
+		}
+	} else {
+		srcUser = model.User{
+			UUID: uuid.MustParse(userIdentifier),
+		}
+	}
+	oldUser, err := s.Read(ctx, srcUser)
+	if err != nil {
+		return err
+	}
+	return s.repository.Delete(ctx, oldUser)
+}
