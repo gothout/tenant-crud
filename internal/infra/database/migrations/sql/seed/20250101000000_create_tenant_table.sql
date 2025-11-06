@@ -16,7 +16,6 @@ CREATE TYPE user_role AS ENUM (
     'TENANT_USER'    -- Usuário comum de um tenant (tenant_uuid != NULL)
     );
 
--- Cria a tabela de usuários
 CREATE TABLE IF NOT EXISTS users (
      uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -39,3 +38,13 @@ CREATE TABLE IF NOT EXISTS users (
              REFERENCES tenant(uuid)
              ON DELETE SET NULL
 );
+
+CREATE TABLE IF NOT EXISTS users_acess_tokens (
+    user_uuid UUID,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    expire_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    CONSTRAINT fk_user
+        FOREIGN KEY(user_uuid)
+            REFERENCES users(uuid)
+            ON DELETE SET NULL
+)

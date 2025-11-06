@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"tenant-crud/internal/iam/application/model"
+	"tenant-crud/internal/iam/application/auth/model"
 )
 
 type Service interface {
