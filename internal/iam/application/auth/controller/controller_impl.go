@@ -1,7 +1,13 @@
 package controller
 
 import (
+	"errors"
+	"net/http"
+	"tenant-crud/internal/iam/application/auth"
+	"tenant-crud/internal/iam/application/auth/dto"
 	"tenant-crud/internal/iam/application/auth/service"
+	userDto "tenant-crud/internal/iam/domain/user/dto"
+	"tenant-crud/internal/pkg/rest_err"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +22,58 @@ func New(service service.Service) Controller {
 	}
 }
 
-func (impl *impl) Login(c *gin.Context) {
+// @Summary Efetua o login do usuário
+// @Description Recebe email e senha, autentica o usuário e retorna o token de acesso.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.LoginRequest true "Credenciais do Usuário (Email e Senha)"
+// @Success 200 {object} dto.LoginResponse "Login bem-sucedido"
+// @Failure 400 {object} rest_err.RestErr "Requisição inválida (JSON mal formatado)"
+// @Failure 404 {object} rest_err.RestErr "Credenciais inválidas (usuário/senha errados)"
+// @Failure 409 {object} rest_err.RestErr "Token duplicado ou conflito"
+// @Failure 500 {object} rest_err.RestErr "Erro interno do servidor"
+// @Router /api/auth/login [post]
+func (ctrl *impl) Login(c *gin.Context) {
+	var req dto.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		restErr := rest_err.NewBadRequestError("invalid json body")
+		c.JSON(restErr.Code, restErr)
+		return
+	}
 
+	uLogin, err := ctrl.service.Login(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		var restError *rest_err.RestErr
+		switch {
+		case errors.Is(err, auth.ErrPwdWrong):
+			restError = rest_err.NewNotFoundError(err.Error())
+
+		case errors.Is(err, auth.ErrTokenDuplicated):
+			restError = rest_err.NewConflictValidationError(err.Error(), nil)
+
+		default:
+			restError = rest_err.NewInternalServerError("internal server error", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	response := dto.LoginResponse{
+		User: userDto.UserResponse{
+			UUID:       uLogin.User.UUID,
+			TenantUUID: uLogin.User.TenantUUID,
+			Name:       uLogin.User.Name,
+			Email:      uLogin.User.Email,
+			Role:       uLogin.User.Role,
+			Live:       uLogin.User.Live,
+			CreateAt:   uLogin.User.CreateAt,
+			UpdateAt:   uLogin.User.UpdateAt,
+		},
+		Token:  uLogin.AcessToken.Token,
+		Expire: uLogin.AcessToken.Expiry,
+	}
+
+	c.JSON(http.StatusOK, response)
 }

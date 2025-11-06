@@ -43,10 +43,13 @@ func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
 
 func SetupApiRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainContainer.Container) {
 	v1Group := routerGroup.Group("/v1")
-
 	// iamDomainsRoutes
 	tController := iamDomainContainer.Di().GetTenantContainer().GetTenantController()
 	uController := iamDomainContainer.Di().GetUserContainer().GetUserController()
 	tController.RegisterRoutes(v1Group)
 	uController.RegisterRoutes(v1Group)
+}
+
+func SetupAuthRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainContainer.Container) {
+	authController := iamDomainContainer.
 }
