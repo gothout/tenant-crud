@@ -2,7 +2,7 @@ package di
 
 import (
 	"tenant-crud/internal/iam/domain/di"
-	"tenant-crud/internal/infra/jwt" // Certifique-se que este é o caminho do seu TokenGenerator
+	"tenant-crud/internal/infra/jwt"
 
 	"gorm.io/gorm"
 )

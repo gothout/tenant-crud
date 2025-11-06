@@ -47,7 +47,7 @@ func NewTokenGenerator(cfg Config) (*TokenGenerator, error) {
 		accessExpiry:     cfg.AccessExpiry,
 	}, nil
 }
-func (tg *TokenGenerator) GenerateAccessToken(userID uuid.UUID, tenantID uuid.UUID) (string, error) {
+func (tg *TokenGenerator) GenerateAccessToken(userID uuid.UUID, tenantID uuid.UUID) (string, time.Time, error) {
 	expirationTime := time.Now().Add(tg.accessExpiry)
 
 	claims := &AccessTokenClaims{
@@ -63,10 +63,10 @@ func (tg *TokenGenerator) GenerateAccessToken(userID uuid.UUID, tenantID uuid.UU
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(tg.accessSecretKey)
 	if err != nil {
-		return "", fmt.Errorf("erro ao assinar o access token: %w", err)
+		return "", time.Time{}, fmt.Errorf("erro ao assinar o access token: %w", err)
 	}
 
-	return tokenString, nil
+	return tokenString, expirationTime, nil
 }
 
 func (tg *TokenGenerator) GenerateRefreshToken(userID uuid.UUID) (string, error) {
