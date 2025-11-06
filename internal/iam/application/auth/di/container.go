@@ -30,4 +30,6 @@ func NewContainer(db *gorm.DB, domainContainer *domainContainer.Container, jwt *
 	}
 }
 
-func (c *Container) GetRepository() repository.Repository
+func (c *Container) GetRepository() repository.Repository { return c.Repository }
+func (c *Container) GetService() service.Service          { return c.Service }
+func (c *Container) GetController() controller.Controller { return c.Controller }

@@ -29,6 +29,25 @@ definitions:
     - password
     - role
     type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  dto.LoginResponse:
+    properties:
+      expire:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/dto.UserResponse'
+    type: object
   dto.TenantResponse:
     properties:
       createAt:
@@ -134,6 +153,72 @@ definitions:
 info:
   contact: {}
 paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Recebe email e senha, autentica o usuário e retorna o token de
+        acesso.
+      parameters:
+      - description: Credenciais do Usuário (Email e Senha)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login bem-sucedido
+          schema:
+            $ref: '#/definitions/dto.LoginResponse'
+        "400":
+          description: Requisição inválida (JSON mal formatado)
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "404":
+          description: Credenciais inválidas (usuário/senha errados)
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "409":
+          description: Token duplicado ou conflito
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Efetua o login do usuário
+      tags:
+      - Auth
+  /api/auth/logout/{token}:
+    post:
+      consumes:
+      - application/json
+      description: Invalida o token de acesso atual do usuário.
+      parameters:
+      - description: Token de acesso a ser revogado
+        in: path
+        name: token
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Token revogado com sucesso
+        "404":
+          description: Token não encontrado
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno do servidor
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Revoga o token de acesso
+      tags:
+      - Auth
   /api/v1/tenant:
     delete:
       description: Exclui permanentemente um tenant no sistema usando o UUID ou o

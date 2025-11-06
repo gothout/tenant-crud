@@ -37,6 +37,7 @@ func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
 	// Configuração das rotas da API
 	apiGroup := r.Group("/api")
 	SetupApiRoutes(apiGroup, tContainer)
+	SetupAuthRoutes(apiGroup, tContainer)
 
 	return r
 }
@@ -51,5 +52,6 @@ func SetupApiRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainC
 }
 
 func SetupAuthRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainContainer.Container) {
-	authController := iamDomainContainer.
+	authController := iamDomainContainer.GetApplicationContainer().GetAuthContainer().Controller
+	authController.RegisterRoutes(routerGroup)
 }

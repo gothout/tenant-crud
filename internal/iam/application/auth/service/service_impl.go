@@ -32,7 +32,7 @@ func (s *impl) Login(ctx context.Context, email, pwd string) (model.Login, error
 	if err != nil {
 		return model.Login{}, auth.ErrPwdWrong
 	}
-	if util.Compare(rUser.PasswordHash, pwd); err != nil {
+	if err := util.Compare(rUser.PasswordHash, pwd); err != nil {
 		return model.Login{}, auth.ErrPwdWrong
 	}
 	token, expTime, err := s.jwt.GenerateAccessToken(rUser.UUID, *rUser.TenantUUID)
@@ -48,4 +48,8 @@ func (s *impl) Login(ctx context.Context, email, pwd string) (model.Login, error
 	}
 
 	return response, nil
+}
+
+func (s *impl) RevokeAcessToken(ctx context.Context, token string) error {
+	return s.repository.RevokeAcessToken(ctx, token)
 }

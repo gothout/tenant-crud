@@ -77,3 +77,23 @@ func (ctrl *impl) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// @Summary Revoga o token de acesso
+// @Description Invalida o token de acesso atual do usuário.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param token path string true "Token de acesso a ser revogado"
+// @Success 202 "Token revogado com sucesso"
+// @Failure 404 {object} rest_err.RestErr "Token não encontrado"
+// @Failure 500 {object} rest_err.RestErr "Erro interno do servidor"
+// @Router /api/auth/logout/{token} [post]
+func (ctrl *impl) Logout(c *gin.Context) {
+	token := c.Param("token")
+	if err := ctrl.service.RevokeAcessToken(c.Request.Context(), token); err != nil {
+		restErr := rest_err.NewForbiddenError("user not authorized")
+		c.JSON(restErr.Code, restErr)
+		return
+	}
+	c.JSON(http.StatusAccepted, nil)
+}

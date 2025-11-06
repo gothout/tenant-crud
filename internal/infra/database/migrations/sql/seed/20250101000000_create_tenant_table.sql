@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS users_acess_tokens (
     user_uuid UUID,
-    token VARCHAR(255) NOT NULL UNIQUE,
+    token TEXT NOT NULL UNIQUE,
     expire_date TIMESTAMP WITHOUT TIME ZONE NOT NULL,
     CONSTRAINT fk_user
         FOREIGN KEY(user_uuid)

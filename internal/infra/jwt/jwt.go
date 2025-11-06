@@ -48,7 +48,7 @@ func NewTokenGenerator(cfg Config) (*TokenGenerator, error) {
 	}, nil
 }
 func (tg *TokenGenerator) GenerateAccessToken(userID uuid.UUID, tenantID uuid.UUID) (string, time.Time, error) {
-	expirationTime := time.Now().Add(tg.accessExpiry)
+	expirationTime := time.Now().UTC().Add(tg.accessExpiry)
 
 	claims := &AccessTokenClaims{
 		TenantID: tenantID.String(),
