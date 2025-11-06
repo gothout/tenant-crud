@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"tenant-crud/internal/infra/jwt"
 	"time"
+
+	"tenant-crud/cmd/server"
+	iamContainer "tenant-crud/internal/iam/di"
+	"tenant-crud/internal/infra/database/postgres"
 
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
-	"tenant-crud/cmd/server"
-	iamContainer "tenant-crud/internal/iam/domain/di"
-	"tenant-crud/internal/infra/database/postgres"
 )
 
 // Application armazena as dependências centrais da aplicação.
@@ -31,19 +33,31 @@ func Environment() {
 	}
 }
 
-func initContainer(db *gorm.DB) *iamContainer.Container {
-	return iamContainer.NewContainer(db)
+func initContainer(db *gorm.DB, jwtInstance *jwt.TokenGenerator) *iamContainer.Container {
+	return iamContainer.NewContainer(db, jwtInstance)
 }
 
 // New prepara a aplicação (config, db, di) e retorna a instância.
 func New() (*Application, error) {
 	Environment()
 	log.Println("[BOOTSTRAP] Configuração de ambiente carregada.")
+	jwtConfig := jwt.Config{
+		AccessSecret:  viper.GetString("security.jwt_access_secret"),
+		RefreshSecret: viper.GetString("security.jwt_refresh_secret"),
+		Issuer:        viper.GetString("app.name"),
+		AccessExpiry:  time.Duration(viper.GetInt64("security.jwt_access_expiry_min")) * time.Minute,
+	}
 
+	tokenGen, err := jwt.NewTokenGenerator(jwtConfig)
+	if err != nil {
+		// Erro fatal, a aplicação não pode subir sem o gerador de token
+		return nil, fmt.Errorf("falha ao criar gerador de token: %w", err)
+	}
+	log.Println("[BOOTSTRAP] Gerador de token inicializado.")
 	db := postgres.InitPostgres()
 	log.Println("[BOOTSTRAP] Conexão com o banco de dados inicializada.")
 
-	container := initContainer(db)
+	container := initContainer(db, tokenGen)
 	log.Println("[BOOTSTRAP] Contêiner de dependências inicializado.")
 
 	return &Application{

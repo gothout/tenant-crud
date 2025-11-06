@@ -3,7 +3,7 @@ package routes
 import (
 	"fmt"
 	"os"
-	iamDomainContainer "tenant-crud/internal/iam/domain/di"
+	iamDomainContainer "tenant-crud/internal/iam/di"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
@@ -14,7 +14,7 @@ import (
 )
 
 func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
-	env := viper.GetString("environment")
+	env := viper.GetString("app.env")
 	// 1. Configuração do modo Gin
 	switch env {
 	case "dev":
@@ -22,7 +22,7 @@ func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
 	case "prod":
 		gin.SetMode(gin.ReleaseMode)
 	case "":
-		fmt.Println("WARNING: 'environment' not set in config. Defaulting to 'dev' mode.")
+		fmt.Println("WARNING: 'app.env' not set in config. Defaulting to 'dev' mode.")
 		gin.SetMode(gin.DebugMode)
 	default:
 		fmt.Printf("ERROR: Invalid environment value '%s'. Must be 'dev' or 'prod'.\n", env)
@@ -45,8 +45,8 @@ func SetupApiRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainC
 	v1Group := routerGroup.Group("/v1")
 
 	// iamDomainsRoutes
-	tController := iamDomainContainer.GetTenantContainer().GetTenantController()
-	uController := iamDomainContainer.GetUserContainer().GetUserController()
+	tController := iamDomainContainer.Di().GetTenantContainer().GetTenantController()
+	uController := iamDomainContainer.Di().GetUserContainer().GetUserController()
 	tController.RegisterRoutes(v1Group)
 	uController.RegisterRoutes(v1Group)
 }

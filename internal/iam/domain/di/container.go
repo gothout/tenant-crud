@@ -1,13 +1,15 @@
 package di
 
 import (
-	// Tenant layer
-	"gorm.io/gorm"
 	tenantContainer "tenant-crud/internal/iam/domain/tenant/di"
 	userContainer "tenant-crud/internal/iam/domain/user/di"
+
+	// Tenant layer
+	"gorm.io/gorm"
 )
 
 type Container struct {
+
 	// Tenant
 	tenantContainer *tenantContainer.Container
 	// User

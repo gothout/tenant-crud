@@ -11,15 +11,15 @@ import (
 	"github.com/spf13/viper"
 
 	"tenant-crud/cmd/server/routes"
-	"tenant-crud/internal/iam/domain/di"
+	iamContainer "tenant-crud/internal/iam/di"
 )
 
 type HTTPServer struct {
 	server *http.Server
 }
 
-func NewHTTPServer(container *di.Container) *HTTPServer {
-	router := routes.SetupRouter(container)
+func NewHTTPServer(iamContainer *iamContainer.Container) *HTTPServer {
+	router := routes.SetupRouter(iamContainer)
 	port := fmt.Sprintf(":%s", viper.GetString("server.http.port"))
 
 	return &HTTPServer{server: &http.Server{
