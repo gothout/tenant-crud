@@ -53,3 +53,7 @@ func (s *impl) Login(ctx context.Context, email, pwd string) (model.Login, error
 func (s *impl) RevokeAcessToken(ctx context.Context, token string) error {
 	return s.repository.RevokeAcessToken(ctx, token)
 }
+
+func (s *impl) GetAcessToken(ctx context.Context, token string) (model.AcessToken, error) {
+	return s.repository.GetAcessToken(ctx, token)
+}

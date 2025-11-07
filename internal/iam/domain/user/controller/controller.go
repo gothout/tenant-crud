@@ -1,9 +1,13 @@
 package controller
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	domainUserModel "tenant-crud/internal/iam/domain/user/model"
+	"tenant-crud/internal/iam/middleware"
+)
 
 type Controller interface {
-	RegisterRoutes(routerGroup *gin.RouterGroup)
+	RegisterRoutes(mw middleware.Middleware, routerGroup *gin.RouterGroup)
 	Create(c *gin.Context)
 	Read(c *gin.Context)
 	List(c *gin.Context)
@@ -11,10 +15,10 @@ type Controller interface {
 	Delete(c *gin.Context)
 }
 
-func (ctrl *impl) RegisterRoutes(routerGroup *gin.RouterGroup) {
+func (ctrl *impl) RegisterRoutes(mw middleware.Middleware, routerGroup *gin.RouterGroup) {
 	group := routerGroup.Group("/user")
 	group.POST("/:identifier", ctrl.Create)
-	group.GET("/:identifier", ctrl.Read)
+	group.GET("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin), ctrl.Read)
 	group.GET("/list", ctrl.List)
 	group.PATCH("/:identifier", ctrl.Update)
 	group.DELETE("/:identifier", ctrl.Delete)

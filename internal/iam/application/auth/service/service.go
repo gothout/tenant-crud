@@ -8,4 +8,5 @@ import (
 type Service interface {
 	Login(ctx context.Context, email, pwd string) (model.Login, error)
 	RevokeAcessToken(ctx context.Context, token string) error
+	GetAcessToken(ctx context.Context, token string) (model.AcessToken, error)
 }

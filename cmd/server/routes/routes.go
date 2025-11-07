@@ -2,13 +2,13 @@ package routes
 
 import (
 	"fmt"
-	"os"
-	iamDomainContainer "tenant-crud/internal/iam/di"
-
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"os"
+	iamDomainContainer "tenant-crud/internal/iam/di"
+	iamMiddleware "tenant-crud/internal/iam/middleware"
 
 	_ "tenant-crud/docs"
 )
@@ -36,19 +36,21 @@ func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
 
 	// Configuração das rotas da API
 	apiGroup := r.Group("/api")
-	SetupApiRoutes(apiGroup, tContainer)
+	iamMiddleware := iamMiddleware.New(tContainer.GetApplicationContainer().GetAuthContainer().GetService(), tContainer.Di().GetUserContainer().GetUserService())
+	SetupApiRoutes(iamMiddleware, apiGroup, tContainer)
 	SetupAuthRoutes(apiGroup, tContainer)
 
 	return r
 }
 
-func SetupApiRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainContainer.Container) {
+func SetupApiRoutes(mw iamMiddleware.Middleware, routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainContainer.Container) {
+	routerGroup.Use(mw.SetContextAutorization())
 	v1Group := routerGroup.Group("/v1")
 	// iamDomainsRoutes
 	tController := iamDomainContainer.Di().GetTenantContainer().GetTenantController()
 	uController := iamDomainContainer.Di().GetUserContainer().GetUserController()
 	tController.RegisterRoutes(v1Group)
-	uController.RegisterRoutes(v1Group)
+	uController.RegisterRoutes(mw, v1Group)
 }
 
 func SetupAuthRoutes(routerGroup *gin.RouterGroup, iamDomainContainer *iamDomainContainer.Container) {

@@ -8,4 +8,5 @@ import (
 type Repository interface {
 	CreateAcessToken(ctx context.Context, m model.AcessToken) error
 	RevokeAcessToken(ctx context.Context, token string) error
+	GetAcessToken(ctx context.Context, token string) (model.AcessToken, error)
 }

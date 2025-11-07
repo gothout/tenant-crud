@@ -56,3 +56,12 @@ func (r *impl) RevokeAcessToken(ctx context.Context, token string) error {
 	}
 	return nil
 }
+
+func (r *impl) GetAcessToken(ctx context.Context, token string) (model.AcessToken, error) {
+	var m model.AcessToken
+	result := r.db.WithContext(ctx).First(&m, "token = ?", token)
+	if result.Error != nil {
+		return model.AcessToken{}, result.Error
+	}
+	return m, nil
+}
