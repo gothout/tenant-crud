@@ -252,6 +252,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Deleta um Tenant
       tags:
       - Tenant
@@ -287,6 +289,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Busca um Tenant
       tags:
       - Tenant
@@ -321,6 +325,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Cria um novo Tenant
       tags:
       - Tenant
@@ -368,6 +374,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Atualiza um Tenant
       tags:
       - Tenant
@@ -403,6 +411,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Lista Tenants
       tags:
       - Tenant
@@ -434,6 +444,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Remove um usuário
       tags:
       - User
@@ -471,6 +483,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Busca um usuário
       tags:
       - User
@@ -517,6 +531,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Atualiza um usuário
       tags:
       - User
@@ -562,6 +578,8 @@ paths:
           description: Erro interno do servidor.
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Cria um novo Usuário
       tags:
       - User
@@ -592,6 +610,8 @@ paths:
             ou erro ao listar).
           schema:
             $ref: '#/definitions/rest_err.RestErr'
+      security:
+      - BearerAuth: []
       summary: Lista usuários
       tags:
       - User

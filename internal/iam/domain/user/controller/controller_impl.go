@@ -36,6 +36,7 @@ const (
 // @Tags         User
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        identifier path string true "Identificador (UUID ou Documento) do Tenant ao qual o usuário será associado."
 // @Param        request body dto.CreateUserRequest true "Objeto do usuário que precisa ser criado."
@@ -125,6 +126,7 @@ func (ctrl *impl) Create(c *gin.Context) {
 // @Description  Obtém os detalhes de um usuário específico, buscando pelo UUID ou pelo email.
 // @Tags         User
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        identifier path string true "Identificador (UUID ou Email) do Usuário a ser buscado."
 //
@@ -209,6 +211,7 @@ func (ctrl *impl) Read(c *gin.Context) {
 // @Description  Retorna uma lista paginada de usuários.
 // @Tags         User
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        page query int false "Número da página para paginação." default(1)
 // @Param        size query int false "Número de itens por página." default(10) maximum(100)
@@ -273,6 +276,7 @@ func (ctrl *impl) List(c *gin.Context) {
 // @Tags         User
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        identifier path string true "Identificador (UUID ou Documento) do usuarioa ser atualizado."
 // @Param        request body dto.UpdateUserRequest true "Campos do usuário que precisam ser atualizados."
@@ -412,6 +416,7 @@ func (ctrl *impl) Update(c *gin.Context) {
 // @Description  Esta operação não é reversível. Se o usuário não existir, retorna erro 404.
 // @Tags         User
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        identifier path string true "Identificador (UUID ou Email) do usuário a ser removido."
 //

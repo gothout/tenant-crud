@@ -116,6 +116,11 @@ const docTemplate = `{
         },
         "/api/v1/tenant": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Busca um tenant no sistema usando o UUID ou o Documento (CNPJ/CPF). Pelo menos um dos dois campos deve ser fornecido.",
                 "produces": [
                     "application/json"
@@ -166,6 +171,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Registra um novo tenant (empresa/organização) no sistema.",
                 "consumes": [
                     "application/json"
@@ -216,6 +226,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Exclui permanentemente um tenant no sistema usando o UUID ou o Documento (CNPJ/CPF). Pelo menos um dos dois campos deve ser fornecido.",
                 "produces": [
                     "application/json"
@@ -268,6 +283,11 @@ const docTemplate = `{
         },
         "/api/v1/tenant/list": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retorna uma lista paginada de todos os tenants registrados no sistema.",
                 "produces": [
                     "application/json"
@@ -318,6 +338,11 @@ const docTemplate = `{
         },
         "/api/v1/tenant/{uuid}": {
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza dados de um tenant existente. O tenant a ser atualizado é identificado pelo UUID no path",
                 "consumes": [
                     "application/json"
@@ -383,6 +408,11 @@ const docTemplate = `{
         },
         "/api/v1/user/list": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Retorna uma lista paginada de usuários.",
                 "produces": [
                     "application/json"
@@ -426,6 +456,11 @@ const docTemplate = `{
         },
         "/api/v1/user/{identifier}": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Obtém os detalhes de um usuário específico, buscando pelo UUID ou pelo email.",
                 "produces": [
                     "application/json"
@@ -477,6 +512,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Registra um novo usuário no sistema, associado a um tenant (empresa/organização).",
                 "consumes": [
                     "application/json"
@@ -540,6 +580,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Exclui permanentemente um usuário existente do sistema, identificado pelo UUID ou Email.\nEsta operação não é reversível. Se o usuário não existir, retorna erro 404.",
                 "produces": [
                     "application/json"
@@ -582,6 +627,11 @@ const docTemplate = `{
                 }
             },
             "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Atualiza parcialmente os detalhes de um usuário existente (nome, email, senha ou role).\nApenas os campos fornecidos no corpo do JSON serão atualizados.",
                 "consumes": [
                     "application/json"

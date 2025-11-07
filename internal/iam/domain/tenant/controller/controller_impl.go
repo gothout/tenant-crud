@@ -30,6 +30,7 @@ func New(service service.Service) Controller {
 // @Tags         Tenant
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        request body dto.CreateTenantRequest true "Objeto do tenant que precisa ser criado."
 //
@@ -85,6 +86,7 @@ func (ctrl *impl) Create(c *gin.Context) {
 // @Description  Busca um tenant no sistema usando o UUID ou o Documento (CNPJ/CPF). Pelo menos um dos dois campos deve ser fornecido.
 // @Tags         Tenant
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        uuid query string false "UUID do tenant a ser buscado. (Ex: 8871abf3-ed11-4770-b986-e8d98d022d4f)"
 // @Param        document query string false "Documento (CNPJ/CPF) do tenant a ser buscado. (Ex: 12345678901234)"
@@ -180,6 +182,7 @@ func (ctrl *impl) Read(c *gin.Context) {
 // @Description  Retorna uma lista paginada de todos os tenants registrados no sistema.
 // @Tags         Tenant
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        page query int true "O número da página a ser retornada (deve ser >= 1)." default(1)
 // @Param        pageSize query int true "O número de itens por página (máximo 100)." default(10)
@@ -234,6 +237,7 @@ func (ctrl *impl) List(c *gin.Context) {
 // @Tags         Tenant
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        uuid path string true "UUID do tenant a ser atualizado."
 // @Param        request body dto.UpdateTenantRequest true "Campos do tenant a serem atualizados. Apenas os campos presentes serão modificados."
@@ -329,6 +333,7 @@ func (ctrl *impl) Update(c *gin.Context) {
 // @Description  Exclui permanentemente um tenant no sistema usando o UUID ou o Documento (CNPJ/CPF). Pelo menos um dos dois campos deve ser fornecido.
 // @Tags         Tenant
 // @Produce      json
+// @Security     BearerAuth
 //
 // @Param        uuid query string false "UUID do tenant a ser excluído. (Ex: 8871abf3-ed11-4770-b986-e8d98d022d4f)"
 // @Param        document query string false "Documento (CNPJ/CPF) do tenant a ser excluído. (Ex: 12345678901234)"
