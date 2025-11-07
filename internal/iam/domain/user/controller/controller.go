@@ -17,9 +17,9 @@ type Controller interface {
 
 func (ctrl *impl) RegisterRoutes(mw middleware.Middleware, routerGroup *gin.RouterGroup) {
 	group := routerGroup.Group("/user")
-	group.POST("/:identifier", ctrl.Create)
-	group.GET("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin), ctrl.Read)
-	group.GET("/list", ctrl.List)
-	group.PATCH("/:identifier", ctrl.Update)
-	group.DELETE("/:identifier", ctrl.Delete)
+	group.POST("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Create)
+	group.GET("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Read)
+	group.GET("/list", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.List)
+	group.PATCH("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Update)
+	group.DELETE("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Delete)
 }

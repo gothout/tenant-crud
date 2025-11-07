@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -12,6 +11,7 @@ import (
 	applicationAuthServiceInstance "tenant-crud/internal/iam/application/auth/service"
 	domainUserModel "tenant-crud/internal/iam/domain/user/model"
 	userDomainServiceInstance "tenant-crud/internal/iam/domain/user/service"
+	"tenant-crud/internal/pkg/rest_err"
 )
 
 type Middleware interface {
@@ -37,30 +37,35 @@ func (mw *impl) SetContextAutorization() gin.HandlerFunc {
 		token := extractBearerToken(authHeader)
 
 		if token == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: token ausente."})
+			err := rest_err.NewForbiddenError("Token ausente ou inválido.")
+			c.AbortWithStatusJSON(err.Code, err)
 			return
 		}
 
 		ctx := c.Request.Context()
 		loginResult, err := mw.applicationAuthService.GetAcessToken(ctx, token)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: token inválido."})
+			e := rest_err.NewForbiddenError("Falha ao validar token de acesso.")
+			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
 		if loginResult.UserUUID == nil || *loginResult.UserUUID == uuid.Nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: usuário não associado ao token."})
+			e := rest_err.NewForbiddenError("Token não associado a nenhum usuário válido.")
+			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
 		if time.Now().UTC().After(loginResult.Expiry) {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: token expirado."})
+			e := rest_err.NewForbiddenError("Token expirado. Efetue login novamente.")
+			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
 		user, err := mw.userDomainServiceInstance.Read(ctx, domainUserModel.User{UUID: *loginResult.UserUUID})
 		if err != nil || user.UUID == uuid.Nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: usuário inválido."})
+			e := rest_err.NewForbiddenError("Usuário associado ao token não encontrado ou inválido.")
+			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
@@ -83,7 +88,8 @@ func (mw *impl) AuthorizeRole(requiredRoles ...domainUserModel.UserRole) gin.Han
 		lUser, ok := GetAuthenticatedUser(c)
 
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: Usuário não autenticado."})
+			e := rest_err.NewForbiddenError("Usuário não autenticado.")
+			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
@@ -93,13 +99,15 @@ func (mw *impl) AuthorizeRole(requiredRoles ...domainUserModel.UserRole) gin.Han
 				requiredRoleStrings[i] = string(role)
 			}
 
-			fmt.Printf("Resultado da Autorização: FALSE - Negado. Role do Usuário: %s. Requer: %v\n", lUser.User.Role, requiredRoleStrings)
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("Acesso negado. Requer uma das roles: %v", requiredRoleStrings)})
+			e := rest_err.NewForbiddenError(fmt.Sprintf(
+				"Acesso negado. É necessário possuir uma das permissões: %v.",
+				requiredRoleStrings,
+			))
+			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
-		fmt.Printf("Resultado da Autorização: TRUE - Autorizado. Role do Usuário: %s\n", lUser.User.Role)
-		c.Next() // Permite o acesso à rota
+		c.Next()
 	}
 }
 
@@ -107,22 +115,18 @@ func isRoleAuthorized(userRole domainUserModel.UserRole, requiredRoles []domainU
 	if len(requiredRoles) == 0 {
 		return true
 	}
-
 	for _, requiredRole := range requiredRoles {
 		if userRole == requiredRole {
 			return true
 		}
 	}
-
 	return false
 }
 
 func extractBearerToken(header string) string {
 	const prefix = "Bearer "
-
 	if !strings.HasPrefix(header, prefix) {
 		return ""
 	}
-
 	return strings.TrimSpace(header[len(prefix):])
 }

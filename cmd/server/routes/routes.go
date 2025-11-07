@@ -49,7 +49,7 @@ func SetupApiRoutes(mw iamMiddleware.Middleware, routerGroup *gin.RouterGroup, i
 	// iamDomainsRoutes
 	tController := iamDomainContainer.Di().GetTenantContainer().GetTenantController()
 	uController := iamDomainContainer.Di().GetUserContainer().GetUserController()
-	tController.RegisterRoutes(v1Group)
+	tController.RegisterRoutes(mw, v1Group)
 	uController.RegisterRoutes(mw, v1Group)
 }
 
