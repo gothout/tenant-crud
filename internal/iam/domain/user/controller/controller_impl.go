@@ -304,6 +304,68 @@ func (ctrl *impl) Update(c *gin.Context) {
 		c.JSON(restError.Code, restError)
 		return
 	}
+
+	var targetUser model.User
+	if err := uuid.Validate(userIdentifier); err != nil {
+		targetUser = model.User{Email: userIdentifier}
+	} else {
+		targetUser = model.User{UUID: uuid.MustParse(userIdentifier)}
+	}
+
+	existingUser, err := ctrl.service.Read(c.Request.Context(), targetUser)
+	if err != nil {
+		var restError *rest_err.RestErr
+		switch {
+		case errors.Is(err, user.ErrNotFound):
+			restError = rest_err.NewNotFoundError(err.Error())
+		case errors.Is(err, user.ErrInvalidInput):
+			restError = rest_err.NewBadRequestError(err.Error())
+		default:
+			restError = rest_err.NewInternalServerError("internal server error", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	authUser, ok := middleware.GetAuthenticatedUser(c)
+	if !ok {
+		restError := rest_err.NewForbiddenError("user is not authenticated")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	switch authUser.User.Role {
+	case model.RoleSystemAdmin:
+		// full access
+	case model.RoleTenantAdmin:
+		if authUser.User.TenantUUID == nil || existingUser.TenantUUID == nil || authUser.User.TenantUUID.String() != existingUser.TenantUUID.String() {
+			restError := rest_err.NewForbiddenError("insufficient permissions to update user")
+			c.JSON(restError.Code, restError)
+			return
+		}
+		if req.Role == model.RoleSystemAdmin {
+			restError := rest_err.NewForbiddenError("you cannot assign system admin role")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	case model.RoleTenantUser:
+		if existingUser.UUID != authUser.User.UUID {
+			restError := rest_err.NewForbiddenError("insufficient permissions to update user")
+			c.JSON(restError.Code, restError)
+			return
+		}
+		if req.Role != "" && req.Role != authUser.User.Role {
+			restError := rest_err.NewForbiddenError("insufficient permissions to change role")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	default:
+		restError := rest_err.NewForbiddenError("insufficient permissions to update user")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
 	uptUser := &model.User{
 		Name:         req.Name,
 		Email:        req.Email,
@@ -367,7 +429,63 @@ func (ctrl *impl) Delete(c *gin.Context) {
 		return
 	}
 
-	err := ctrl.service.Delete(c.Request.Context(), userIdentifier)
+	var targetUser model.User
+	if err := uuid.Validate(userIdentifier); err != nil {
+		targetUser = model.User{Email: userIdentifier}
+	} else {
+		targetUser = model.User{UUID: uuid.MustParse(userIdentifier)}
+	}
+
+	existingUser, err := ctrl.service.Read(c.Request.Context(), targetUser)
+	if err != nil {
+		var restError *rest_err.RestErr
+		switch {
+		case errors.Is(err, user.ErrNotFound):
+			restError = rest_err.NewNotFoundError(err.Error())
+		case errors.Is(err, user.ErrInvalidInput):
+			restError = rest_err.NewBadRequestError(err.Error())
+		default:
+			restError = rest_err.NewInternalServerError("internal server error", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	authUser, ok := middleware.GetAuthenticatedUser(c)
+	if !ok {
+		restError := rest_err.NewForbiddenError("user is not authenticated")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	switch authUser.User.Role {
+	case model.RoleSystemAdmin:
+		// full access
+	case model.RoleTenantAdmin:
+		if authUser.User.TenantUUID == nil || existingUser.TenantUUID == nil || authUser.User.TenantUUID.String() != existingUser.TenantUUID.String() {
+			restError := rest_err.NewForbiddenError("insufficient permissions to delete user")
+			c.JSON(restError.Code, restError)
+			return
+		}
+		if existingUser.Role == model.RoleSystemAdmin {
+			restError := rest_err.NewForbiddenError("insufficient permissions to delete system admin user")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	case model.RoleTenantUser:
+		if existingUser.UUID != authUser.User.UUID {
+			restError := rest_err.NewForbiddenError("insufficient permissions to delete user")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	default:
+		restError := rest_err.NewForbiddenError("insufficient permissions to delete user")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	err = ctrl.service.Delete(c.Request.Context(), userIdentifier)
 	if err != nil {
 		var restError *rest_err.RestErr
 		switch {
