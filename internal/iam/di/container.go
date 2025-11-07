@@ -9,6 +9,7 @@ import (
 )
 
 type Container struct {
+	db          *gorm.DB
 	jwtInstance *jwt.TokenGenerator
 	domain      *domain.Container
 	application *application.Container
@@ -18,6 +19,7 @@ func NewContainer(db *gorm.DB, tokenGen *jwt.TokenGenerator) *Container {
 	domain := domain.NewContainer(db)
 	application := application.NewContainer(db, domain, tokenGen)
 	return &Container{
+		db:          db,
 		domain:      domain,
 		application: application,
 		jwtInstance: tokenGen,
@@ -28,3 +30,4 @@ func (container *Container) GetTokenGenerator() *jwt.TokenGenerator { return con
 func (container *Container) GetApplicationContainer() *application.Container {
 	return container.application
 }
+func (container *Container) GetDB() *gorm.DB { return container.db }

@@ -2,15 +2,16 @@ package routes
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"os"
-	iamDomainContainer "tenant-crud/internal/iam/di"
-	iamMiddleware "tenant-crud/internal/iam/middleware"
 
 	_ "tenant-crud/docs"
+	iamDomainContainer "tenant-crud/internal/iam/di"
+	iamMiddleware "tenant-crud/internal/iam/middleware"
 )
 
 func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
@@ -36,8 +37,9 @@ func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
 
 	// Configuração das rotas da API
 	apiGroup := r.Group("/api")
-	iamMiddleware := iamMiddleware.New(tContainer.GetApplicationContainer().GetAuthContainer().GetService(), tContainer.Di().GetUserContainer().GetUserService())
-	SetupApiRoutes(iamMiddleware, apiGroup, tContainer)
+	mwRepository := iamMiddleware.NewRepository(tContainer.GetDB())
+	iamMiddlewareInstance := iamMiddleware.New(mwRepository)
+	SetupApiRoutes(iamMiddlewareInstance, apiGroup, tContainer)
 	SetupAuthRoutes(apiGroup, tContainer)
 
 	return r
