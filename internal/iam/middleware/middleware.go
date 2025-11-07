@@ -1,16 +1,16 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
-	applicationAuthServiceInstance "tenant-crud/internal/iam/application/auth/service"
 	domainUserModel "tenant-crud/internal/iam/domain/user/model"
-	userDomainServiceInstance "tenant-crud/internal/iam/domain/user/service"
 	"tenant-crud/internal/pkg/rest_err"
 )
 
@@ -20,14 +20,12 @@ type Middleware interface {
 }
 
 type impl struct {
-	applicationAuthService    applicationAuthServiceInstance.Service
-	userDomainServiceInstance userDomainServiceInstance.Service
+	repository Repository
 }
 
-func New(applicationAuthService applicationAuthServiceInstance.Service, userDomainServiceInstance userDomainServiceInstance.Service) Middleware {
+func New(repository Repository) Middleware {
 	return &impl{
-		applicationAuthService:    applicationAuthService,
-		userDomainServiceInstance: userDomainServiceInstance,
+		repository: repository,
 	}
 }
 
@@ -43,42 +41,31 @@ func (mw *impl) SetContextAutorization() gin.HandlerFunc {
 		}
 
 		ctx := c.Request.Context()
-		loginResult, err := mw.applicationAuthService.GetAcessToken(ctx, token)
+		login, err := mw.repository.GetLogin(ctx, token)
 		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				e := rest_err.NewForbiddenError("Token de acesso não encontrado.")
+				c.AbortWithStatusJSON(e.Code, e)
+				return
+			}
 			e := rest_err.NewForbiddenError("Falha ao validar token de acesso.")
 			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
-		if loginResult.UserUUID == nil || *loginResult.UserUUID == uuid.Nil {
+		if login.AcessToken.UserUUID == nil || *login.AcessToken.UserUUID == uuid.Nil {
 			e := rest_err.NewForbiddenError("Token não associado a nenhum usuário válido.")
 			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
-		if time.Now().UTC().After(loginResult.Expiry) {
+		if time.Now().UTC().After(login.AcessToken.Expiry) {
 			e := rest_err.NewForbiddenError("Token expirado. Efetue login novamente.")
 			c.AbortWithStatusJSON(e.Code, e)
 			return
 		}
 
-		user, err := mw.userDomainServiceInstance.Read(ctx, domainUserModel.User{UUID: *loginResult.UserUUID})
-		if err != nil || user.UUID == uuid.Nil {
-			e := rest_err.NewForbiddenError("Usuário associado ao token não encontrado ou inválido.")
-			c.AbortWithStatusJSON(e.Code, e)
-			return
-		}
-
-		login := Login{
-			User: user,
-			AcessToken: AcessToken{
-				UserUUID: loginResult.UserUUID,
-				Token:    loginResult.Token,
-				Expiry:   loginResult.Expiry,
-			},
-		}
-
-		SetAuthenticatedUser(c, &login)
+		SetAuthenticatedUser(c, login)
 		c.Next()
 	}
 }
