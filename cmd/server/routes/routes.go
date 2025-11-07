@@ -37,11 +37,10 @@ func SetupRouter(tContainer *iamDomainContainer.Container) *gin.Engine {
 
 	// Configuração das rotas da API
 	apiGroup := r.Group("/api")
+	SetupAuthRoutes(apiGroup, tContainer)
 	mwRepository := iamMiddleware.NewRepository(tContainer.GetDB())
 	iamMiddlewareInstance := iamMiddleware.New(mwRepository)
 	SetupApiRoutes(iamMiddlewareInstance, apiGroup, tContainer)
-	SetupAuthRoutes(apiGroup, tContainer)
-
 	return r
 }
 
