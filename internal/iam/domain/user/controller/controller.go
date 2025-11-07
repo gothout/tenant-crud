@@ -20,7 +20,7 @@ func (ctrl *impl) RegisterRoutes(mw middleware.Middleware, routerGroup *gin.Rout
 	group := routerGroup.Group("/user")
 	group.POST("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantAdmin), ctrl.Create)
 	group.GET("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Read)
-	group.GET("/list", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.List)
+	group.GET("/list", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin), ctrl.List)
 	group.PATCH("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Update)
 	group.DELETE("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Delete)
 }

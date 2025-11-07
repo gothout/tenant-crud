@@ -219,8 +219,8 @@ func (ctrl *impl) Read(c *gin.Context) {
 // @Router       /api/v1/user/list [get]
 func (ctrl *impl) List(c *gin.Context) {
 	var (
-		page int = defaultPage // Define o padrão
-		size int = defaultSize // Define o padrão
+		page int = defaultPage
+		size int = defaultSize
 		err  error
 	)
 	pageQuery := c.Query("page")
