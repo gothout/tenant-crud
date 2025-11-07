@@ -318,7 +318,7 @@ const docTemplate = `{
         },
         "/api/v1/tenant/{uuid}": {
             "patch": {
-                "description": "Atualiza dados de um tenant existente. O tenant a ser atualizado é identificado pelo UUID no path.",
+                "description": "Atualiza dados de um tenant existente. O tenant a ser atualizado é identificado pelo UUID no path",
                 "consumes": [
                     "application/json"
                 ],

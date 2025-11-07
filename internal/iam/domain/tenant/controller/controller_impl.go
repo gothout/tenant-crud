@@ -230,7 +230,7 @@ func (ctrl *impl) List(c *gin.Context) {
 }
 
 // @Summary      Atualiza um Tenant
-// @Description  Atualiza dados de um tenant existente. O tenant a ser atualizado é identificado pelo UUID no path.
+// @Description  Atualiza dados de um tenant existente. O tenant a ser atualizado é identificado pelo UUID no path
 // @Tags         Tenant
 // @Accept       json
 // @Produce      json
