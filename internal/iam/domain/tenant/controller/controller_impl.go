@@ -6,6 +6,8 @@ import (
 	"tenant-crud/internal/iam/domain/tenant/dto"
 	"tenant-crud/internal/iam/domain/tenant/model"
 	"tenant-crud/internal/iam/domain/tenant/service"
+	domainUserModel "tenant-crud/internal/iam/domain/user/model"
+	"tenant-crud/internal/iam/middleware"
 	"tenant-crud/internal/pkg/rest_err"
 	"time"
 
@@ -142,6 +144,28 @@ func (ctrl *impl) Read(c *gin.Context) {
 		return
 	}
 
+	authUser, ok := middleware.GetAuthenticatedUser(c)
+	if !ok {
+		restError := rest_err.NewForbiddenError("Usuário não autenticado.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	switch authUser.User.Role {
+	case domainUserModel.RoleSystemAdmin:
+		// full access
+	case domainUserModel.RoleTenantAdmin:
+		if authUser.User.TenantUUID == nil || authUser.User.TenantUUID.String() != rTenant.UUID.String() {
+			restError := rest_err.NewForbiddenError("insufficient permissions to read tenant")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	default:
+		restError := rest_err.NewForbiddenError("insufficient permissions to read tenant")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
 	c.JSON(http.StatusOK, &dto.TenantResponse{
 		UUID:     rTenant.UUID,
 		Name:     rTenant.Name,
@@ -226,6 +250,28 @@ func (ctrl *impl) Update(c *gin.Context) {
 	tenantUUID, err := uuid.Parse(uuidStr)
 	if err != nil {
 		restError := rest_err.NewBadRequestError("O UUID fornecido na URL não é um formato válido.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	authUser, ok := middleware.GetAuthenticatedUser(c)
+	if !ok {
+		restError := rest_err.NewForbiddenError("Usuário não autenticado.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	switch authUser.User.Role {
+	case domainUserModel.RoleSystemAdmin:
+		// full access
+	case domainUserModel.RoleTenantAdmin:
+		if authUser.User.TenantUUID == nil || authUser.User.TenantUUID.String() != tenantUUID.String() {
+			restError := rest_err.NewForbiddenError("insufficient permissions to update tenant")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	default:
+		restError := rest_err.NewForbiddenError("insufficient permissions to update tenant")
 		c.JSON(restError.Code, restError)
 		return
 	}
@@ -318,7 +364,48 @@ func (ctrl *impl) Delete(c *gin.Context) {
 		tenantUUID = parsedUUID
 	}
 
-	err := ctrl.service.Delete(c.Request.Context(), model.Tenant{
+	targetTenant, err := ctrl.service.Read(c.Request.Context(), model.Tenant{
+		UUID:     tenantUUID,
+		Document: req.Document,
+	})
+	if err != nil {
+		var restError *rest_err.RestErr
+		switch err {
+		case tenant.ErrNotFound:
+			restError = rest_err.NewNotFoundError(tenant.ErrNotFound.Error())
+		case tenant.ErrInvalidInput:
+			restError = rest_err.NewBadRequestError(tenant.ErrInvalidInput.Error())
+		default:
+			restError = rest_err.NewInternalServerError("Falha ao excluir tenant", nil)
+		}
+
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	authUser, ok := middleware.GetAuthenticatedUser(c)
+	if !ok {
+		restError := rest_err.NewForbiddenError("Usuário não autenticado.")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	switch authUser.User.Role {
+	case domainUserModel.RoleSystemAdmin:
+		// full access
+	case domainUserModel.RoleTenantAdmin:
+		if authUser.User.TenantUUID == nil || authUser.User.TenantUUID.String() != targetTenant.UUID.String() {
+			restError := rest_err.NewForbiddenError("insufficient permissions to delete tenant")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	default:
+		restError := rest_err.NewForbiddenError("insufficient permissions to delete tenant")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	err = ctrl.service.Delete(c.Request.Context(), model.Tenant{
 		UUID:     tenantUUID,
 		Document: req.Document,
 	})
