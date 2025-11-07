@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
-	"net/http"
-	"strings"
 	applicationAuthServiceInstance "tenant-crud/internal/iam/application/auth/service"
 	domainUserModel "tenant-crud/internal/iam/domain/user/model"
 	userDomainServiceInstance "tenant-crud/internal/iam/domain/user/service"
@@ -29,43 +31,54 @@ func New(applicationAuthService applicationAuthServiceInstance.Service, userDoma
 	}
 }
 
-func checkAuthorization(requiredRoles []string, userRoles []string) bool {
-	roleMap := make(map[string]bool)
-	for _, role := range userRoles {
-		roleMap[role] = true
-	}
-	for _, requiredRole := range requiredRoles {
-		if roleMap[requiredRole] {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (mw *impl) SetContextAutorization() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		token := strings.TrimPrefix(authHeader, "Bearer ")
+		token := extractBearerToken(authHeader)
 
-		loginResult, err := mw.applicationAuthService.GetAcessToken(c, token)
-
-		login := Login{AcessToken: AcessToken{UserUUID: loginResult.UserUUID, Token: loginResult.Token, Expiry: loginResult.Expiry}}
-
-		if err != nil {
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: token ausente."})
 			return
 		}
+
+		ctx := c.Request.Context()
+		loginResult, err := mw.applicationAuthService.GetAcessToken(ctx, token)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: token inválido."})
+			return
+		}
+
+		if loginResult.UserUUID == nil || *loginResult.UserUUID == uuid.Nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: usuário não associado ao token."})
+			return
+		}
+
+		if time.Now().UTC().After(loginResult.Expiry) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: token expirado."})
+			return
+		}
+
+		user, err := mw.userDomainServiceInstance.Read(ctx, domainUserModel.User{UUID: *loginResult.UserUUID})
+		if err != nil || user.UUID == uuid.Nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: usuário inválido."})
+			return
+		}
+
+		login := Login{
+			User: user,
+			AcessToken: AcessToken{
+				UserUUID: loginResult.UserUUID,
+				Token:    loginResult.Token,
+				Expiry:   loginResult.Expiry,
+			},
+		}
+
 		SetAuthenticatedUser(c, &login)
 		c.Next()
 	}
 }
 
 func (mw *impl) AuthorizeRole(requiredRoles ...domainUserModel.UserRole) gin.HandlerFunc {
-	requiredRoleStrings := make([]string, len(requiredRoles))
-	for i, role := range requiredRoles {
-		requiredRoleStrings[i] = string(role)
-	}
-
 	return func(c *gin.Context) {
 		lUser, ok := GetAuthenticatedUser(c)
 
@@ -74,26 +87,42 @@ func (mw *impl) AuthorizeRole(requiredRoles ...domainUserModel.UserRole) gin.Han
 			return
 		}
 
-		ctx := c.Request.Context()
-		loggedUser, err := mw.userDomainServiceInstance.Read(ctx, domainUserModel.User{UUID: lUser.User.UUID})
+		if !isRoleAuthorized(lUser.User.Role, requiredRoles) {
+			requiredRoleStrings := make([]string, len(requiredRoles))
+			for i, role := range requiredRoles {
+				requiredRoleStrings[i] = string(role)
+			}
 
-		if err != nil || loggedUser.UUID == uuid.Nil {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Acesso não autorizado: Falha ao carregar dados do usuário."})
+			fmt.Printf("Resultado da Autorização: FALSE - Negado. Role do Usuário: %s. Requer: %v\n", lUser.User.Role, requiredRoleStrings)
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("Acesso negado. Requer uma das roles: %v", requiredRoleStrings)})
 			return
 		}
 
-		currentUserRole := string(loggedUser.Role)
-		userRoleStrings := []string{currentUserRole}
+		fmt.Printf("Resultado da Autorização: TRUE - Autorizado. Role do Usuário: %s\n", lUser.User.Role)
+		c.Next() // Permite o acesso à rota
+	}
+}
 
-		isAuthorized := checkAuthorization(requiredRoleStrings, userRoleStrings)
+func isRoleAuthorized(userRole domainUserModel.UserRole, requiredRoles []domainUserModel.UserRole) bool {
+	if len(requiredRoles) == 0 {
+		return true
+	}
 
-		if isAuthorized {
-			fmt.Printf("Resultado da Autorização: TRUE - Autorizado. Roles do Usuário: %v\n", userRoleStrings)
-			c.Next() // Permite o acesso à rota
-		} else {
-			fmt.Printf("Resultado da Autorização: FALSE - Negado. Roles do Usuário: %v. Requer: %v\n", userRoleStrings, requiredRoleStrings)
-			// Usa 403 Forbidden, pois o usuário está autenticado, mas não tem permissão
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": fmt.Sprintf("Acesso negado. Requer uma das roles: %v", requiredRoleStrings)})
+	for _, requiredRole := range requiredRoles {
+		if userRole == requiredRole {
+			return true
 		}
 	}
+
+	return false
+}
+
+func extractBearerToken(header string) string {
+	const prefix = "Bearer "
+
+	if !strings.HasPrefix(header, prefix) {
+		return ""
+	}
+
+	return strings.TrimSpace(header[len(prefix):])
 }
