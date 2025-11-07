@@ -1,9 +1,10 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	domainUserModel "tenant-crud/internal/iam/domain/user/model"
 	"tenant-crud/internal/iam/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Controller interface {
@@ -17,7 +18,7 @@ type Controller interface {
 
 func (ctrl *impl) RegisterRoutes(mw middleware.Middleware, routerGroup *gin.RouterGroup) {
 	group := routerGroup.Group("/user")
-	group.POST("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Create)
+	group.POST("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantAdmin), ctrl.Create)
 	group.GET("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Read)
 	group.GET("/list", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.List)
 	group.PATCH("/:identifier", mw.AuthorizeRole(domainUserModel.RoleSystemAdmin, domainUserModel.RoleTenantUser, domainUserModel.RoleTenantAdmin), ctrl.Update)

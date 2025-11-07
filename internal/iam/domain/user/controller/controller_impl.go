@@ -8,6 +8,7 @@ import (
 	"tenant-crud/internal/iam/domain/user/dto"
 	"tenant-crud/internal/iam/domain/user/model"
 	"tenant-crud/internal/iam/domain/user/service"
+	"tenant-crud/internal/iam/middleware"
 	"tenant-crud/internal/pkg/rest_err"
 
 	"github.com/gin-gonic/gin"
@@ -59,6 +60,22 @@ func (ctrl *impl) Create(c *gin.Context) {
 		restError := rest_err.NewBadRequestError("invalid json body")
 		c.JSON(restError.Code, restError)
 		return
+	}
+
+	userAuth, ok := middleware.GetAuthenticatedUser(c)
+	if !ok {
+		restError := rest_err.NewBadRequestError("user is not authenticated")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
+	if userAuth.User.Role == model.RoleTenantAdmin {
+		tenantIdentifier = userAuth.User.Tenant.UUID.String()
+		if req.Role == model.RoleSystemAdmin {
+			restError := rest_err.NewBadRequestError("you cannot create this function.")
+			c.JSON(restError.Code, restError)
+			return
+		}
 	}
 
 	newUser := model.User{
@@ -121,43 +138,59 @@ func (ctrl *impl) Create(c *gin.Context) {
 func (ctrl *impl) Read(c *gin.Context) {
 	userIdentifier := c.Param("identifier")
 	if userIdentifier == "" {
-		restError := rest_err.NewBadRequestError("tenant identifier is required in URL path")
+		restError := rest_err.NewBadRequestError("user identifier is required in URL path")
 		c.JSON(restError.Code, restError)
 		return
 	}
 	var rUser model.User
-	err := uuid.Validate(userIdentifier)
-	if err != nil {
-		rUser = model.User{
-			Email: userIdentifier,
-		}
+	if err := uuid.Validate(userIdentifier); err != nil {
+		rUser = model.User{Email: userIdentifier}
 	} else {
-		uUUIDParsed := uuid.MustParse(userIdentifier)
-		rUser = model.User{
-			UUID: uUUIDParsed,
-		}
+		rUser = model.User{UUID: uuid.MustParse(userIdentifier)}
 	}
-
+	authUser, ok := middleware.GetAuthenticatedUser(c)
+	if !ok {
+		restError := rest_err.NewBadRequestError("user is not authenticated")
+		c.JSON(restError.Code, restError)
+		return
+	}
 	uRead, err := ctrl.service.Read(c.Request.Context(), rUser)
 	if err != nil {
 		var restError *rest_err.RestErr
 		switch {
 		case errors.Is(err, user.ErrNotFound):
 			restError = rest_err.NewNotFoundError(err.Error())
-
 		case errors.Is(err, user.ErrEmailDuplicated):
 			restError = rest_err.NewConflictValidationError(err.Error(), nil)
-
 		case errors.Is(err, user.ErrInvalidInput):
 			restError = rest_err.NewBadRequestError(err.Error())
-
 		default:
 			restError = rest_err.NewInternalServerError("internal server error", nil)
 		}
-
 		c.JSON(restError.Code, restError)
 		return
 	}
+	switch authUser.User.Role {
+	case model.RoleSystemAdmin:
+		// full access
+	case model.RoleTenantAdmin:
+		if uRead.TenantUUID.String() != authUser.User.TenantUUID.String() {
+			restError := rest_err.NewNotFoundError("user does not belong to this tenant")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	case model.RoleTenantUser:
+		if uRead.UUID != authUser.User.UUID {
+			restError := rest_err.NewNotFoundError("user does not belong to this user")
+			c.JSON(restError.Code, restError)
+			return
+		}
+	default:
+		restError := rest_err.NewForbiddenError("insufficient permissions to read user")
+		c.JSON(restError.Code, restError)
+		return
+	}
+
 	response := dto.UserResponse{
 		UUID:       uRead.UUID,
 		TenantUUID: uRead.TenantUUID,
@@ -168,6 +201,7 @@ func (ctrl *impl) Read(c *gin.Context) {
 		CreateAt:   uRead.CreateAt,
 		UpdateAt:   uRead.UpdateAt,
 	}
+
 	c.JSON(http.StatusOK, response)
 }
 
