@@ -2,6 +2,7 @@
 
 # Define o nome do binário/serviço
 SERVICE_BIN="./tenant"
+RUN_DIR="./run"
 
 # --- 1. Garantir Permissão de Execução (chmod 777) ---
 echo "=> Definindo permissão de execução total (777) para $SERVICE_BIN..."
@@ -28,7 +29,18 @@ fi
 
 sleep 2 # Dá um tempo para o sistema garantir a parada
 
-# --- 3. Iniciar o Serviço ---
+# --- 3. Limpeza Agressiva do PID/RUN Dir ---
+# Remove o diretório 'run' e todos os seus conteúdos, forçando a inicialização limpa.
+if [ -d "$RUN_DIR" ]; then
+    echo "=> LIMPANDO O CAOS: Removendo o diretório PID/run ($RUN_DIR) para garantir inicialização limpa..."
+    rm -rf "$RUN_DIR"
+    if [ $? -ne 0 ]; then
+        echo "ERRO: Falha ao remover $RUN_DIR. Verifique permissões."
+        exit 1
+    fi
+fi
+
+# --- 4. Iniciar o Serviço ---
 echo "=> Iniciando o serviço: $SERVICE_BIN --start"
 "$SERVICE_BIN" --start
 START_STATUS=$?
