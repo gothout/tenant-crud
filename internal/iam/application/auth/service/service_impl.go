@@ -2,13 +2,16 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"tenant-crud/internal/iam/application/auth"
+	"tenant-crud/internal/iam/application/auth/cache"
 	"tenant-crud/internal/iam/application/auth/model"
 	"tenant-crud/internal/iam/application/auth/repository"
 	modelUser "tenant-crud/internal/iam/domain/user/model"
 	userService "tenant-crud/internal/iam/domain/user/service"
 	"tenant-crud/internal/iam/domain/util"
 	"tenant-crud/internal/infra/jwt"
+	"tenant-crud/internal/pkg/mailer"
 )
 
 type impl struct {
@@ -56,4 +59,50 @@ func (s *impl) RevokeAcessToken(ctx context.Context, token string) error {
 
 func (s *impl) GetAcessToken(ctx context.Context, token string) (model.AcessToken, error) {
 	return s.repository.GetAcessToken(ctx, token)
+}
+
+func (s *impl) CreateOTPCode(ctx context.Context, email string) error {
+	_, found := cache.GetOTP(email)
+	if found {
+		return auth.OTPCodeExist
+	}
+	otpCode, err := auth.GenerateOTP(6)
+	if err != nil {
+		return err
+	}
+	cache.SaveOTP(email, otpCode)
+	err = mailer.Use().SendRaw(
+		email,
+		"OTP Code",
+		fmt.Sprintf("<h1>Seu código OTP é: %s</h1>", otpCode),
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *impl) ValidateOTPCode(ctx context.Context, email, codeDst string) bool {
+	otpExist, found := cache.GetOTP(email)
+	if !found {
+		return false
+	}
+	if otpExist != codeDst {
+		return false
+	}
+
+	return true
+}
+
+func (s *impl) ChangeUserPwd(ctx context.Context, otpCode, email, pwd string) (bool, error) {
+	if !s.ValidateOTPCode(ctx, email, otpCode) {
+		return false, auth.OTPCodeWrong
+	}
+	cache.DeleteOTP(email)
+	updUser := modelUser.User{PasswordHash: pwd}
+	_, err := s.userService.Update(ctx, updUser, email)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

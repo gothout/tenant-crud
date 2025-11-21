@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"tenant-crud/internal/infra/jwt"
+	"tenant-crud/internal/pkg/mailer"
 	"time"
 
 	"tenant-crud/cmd/server"
@@ -40,7 +41,7 @@ func initContainer(db *gorm.DB, jwtInstance *jwt.TokenGenerator) *iamContainer.C
 // New prepara a aplicação (config, db, di) e retorna a instância.
 func New() (*Application, error) {
 	Environment()
-	log.Println("[BOOTSTRAP] Configuração de ambiente carregada.")
+	log.Println("[BOOTSTRAP-ENV] Configuração de ambiente carregada.")
 	jwtConfig := jwt.Config{
 		AccessSecret:  viper.GetString("security.jwt_access_secret"),
 		RefreshSecret: viper.GetString("security.jwt_refresh_secret"),
@@ -51,14 +52,20 @@ func New() (*Application, error) {
 	tokenGen, err := jwt.NewTokenGenerator(jwtConfig)
 	if err != nil {
 		// Erro fatal, a aplicação não pode subir sem o gerador de token
-		return nil, fmt.Errorf("falha ao criar gerador de token: %w", err)
+		return nil, fmt.Errorf("[BOOTSTRAP-TOKEN] Falha ao criar gerador de token: %w", err)
 	}
-	log.Println("[BOOTSTRAP] Gerador de token inicializado.")
+	log.Println("[BOOTSTRAP-TOKEN] Gerador de token inicializado.")
+	mailerCfg := mailer.SMTPConfig{Host: viper.GetString("smtp.host"), Port: viper.GetString("smtp.port"), Username: viper.GetString("smtp.username"), Password: viper.GetString("smtp.password"), Encryption: viper.GetString("smtp.encryption"), Address: viper.GetString("smtp.address")}
+	_, err = mailer.New(mailerCfg)
+	if err != nil {
+		log.Println("[BOOTSTRAP-MAILER] Falha ao iniciar sistema de emails")
+	}
+	log.Println("[BOOTSTRAP-MAILER] Sucesso ao iniciar sistema de emails")
 	db := postgres.InitPostgres()
-	log.Println("[BOOTSTRAP] Conexão com o banco de dados inicializada.")
+	log.Println("[BOOTSTRAP-DATABASE] Conexão com o banco de dados inicializada.")
 
 	container := initContainer(db, tokenGen)
-	log.Println("[BOOTSTRAP] Contêiner de dependências inicializado.")
+	log.Println("[BOOTSTRAP-DI] Contêiner de dependências inicializado.")
 
 	return &Application{
 		container: container,
@@ -67,7 +74,7 @@ func New() (*Application, error) {
 }
 
 func (a *Application) Start(ctx context.Context) error {
-	log.Println("[BOOTSTRAP] Iniciando servidor no ambiente:", viper.GetString("environment"))
+	log.Println("[BOOTSTRAP-SERVER] Iniciando servidor no ambiente:", viper.GetString("environment"))
 
 	errCh := make(chan error, 1)
 	go func() {

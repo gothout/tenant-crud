@@ -103,6 +103,104 @@
                 }
             }
         },
+        "/api/auth/otp": {
+            "post": {
+                "description": "Gera um OTP vinculado ao e-mail e envia por e-mail.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Solicita um código OTP",
+                "parameters": [
+                    {
+                        "description": "Email para envio do OTP",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "OTP enviado com sucesso"
+                    },
+                    "400": {
+                        "description": "JSON inválido",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "409": {
+                        "description": "OTP já existente",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/auth/password/reset": {
+            "post": {
+                "description": "Valida o OTP e troca a senha do usuário.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Troca a senha usando OTP",
+                "parameters": [
+                    {
+                        "description": "Email, OTP e nova senha",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.OTPResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Senha alterada com sucesso"
+                    },
+                    "400": {
+                        "description": "JSON inválido",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "403": {
+                        "description": "OTP inválido",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    },
+                    "500": {
+                        "description": "Erro interno",
+                        "schema": {
+                            "$ref": "#/definitions/rest_err.RestErr"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/tenant": {
             "get": {
                 "security": [
@@ -755,6 +853,37 @@
                 },
                 "user": {
                     "$ref": "#/definitions/dto.UserResponse"
+                }
+            }
+        },
+        "dto.OTPRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.OTPResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "otp",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "otp": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
                 }
             }
         },

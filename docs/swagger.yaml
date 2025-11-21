@@ -48,6 +48,27 @@ definitions:
       user:
         $ref: '#/definitions/dto.UserResponse'
     type: object
+  dto.OTPRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  dto.OTPResetPasswordRequest:
+    properties:
+      email:
+        type: string
+      otp:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - otp
+    - password
+    type: object
   dto.TenantResponse:
     properties:
       createAt:
@@ -217,6 +238,70 @@ paths:
           schema:
             $ref: '#/definitions/rest_err.RestErr'
       summary: Revoga o token de acesso
+      tags:
+      - Auth
+  /api/auth/otp:
+    post:
+      consumes:
+      - application/json
+      description: Gera um OTP vinculado ao e-mail e envia por e-mail.
+      parameters:
+      - description: Email para envio do OTP
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OTPRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: OTP enviado com sucesso
+        "400":
+          description: JSON inválido
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "409":
+          description: OTP já existente
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Solicita um código OTP
+      tags:
+      - Auth
+  /api/auth/password/reset:
+    post:
+      consumes:
+      - application/json
+      description: Valida o OTP e troca a senha do usuário.
+      parameters:
+      - description: Email, OTP e nova senha
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.OTPResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Senha alterada com sucesso
+        "400":
+          description: JSON inválido
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "403":
+          description: OTP inválido
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/rest_err.RestErr'
+      summary: Troca a senha usando OTP
       tags:
       - Auth
   /api/v1/tenant:

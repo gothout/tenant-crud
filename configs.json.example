@@ -22,5 +22,15 @@
       "db_name": "db_Base",
       "ssl_mode": "disable"
     }
-  }
+  },
+  "smtp": {
+    "mailer": "smtp",
+    "host": "smtp.office365.com",
+    "port": "587",
+    "username": "no-reply@test.com.br",
+    "password": "pwdTest",
+    "encryption": "tls",
+    "address": "no-reply@test.com.br"
+  },
+  "environment": "dev"
 }

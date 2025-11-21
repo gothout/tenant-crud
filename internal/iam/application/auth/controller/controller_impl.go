@@ -97,3 +97,90 @@ func (ctrl *impl) Logout(c *gin.Context) {
 	}
 	c.JSON(http.StatusAccepted, nil)
 }
+
+// @Summary Solicita um código OTP
+// @Description Gera um OTP vinculado ao e-mail e envia por e-mail.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.OTPRequest true "Email para envio do OTP"
+// @Success 202 "OTP enviado com sucesso"
+// @Failure 400 {object} rest_err.RestErr "JSON inválido"
+// @Failure 409 {object} rest_err.RestErr "OTP já existente"
+// @Failure 500 {object} rest_err.RestErr "Erro interno"
+// @Router /api/auth/otp [post]
+func (ctrl *impl) CreateOTP(c *gin.Context) {
+	var req dto.OTPRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		restErr := rest_err.NewBadRequestError("invalid json body")
+		c.JSON(restErr.Code, restErr)
+		return
+	}
+
+	if err := ctrl.service.CreateOTPCode(c.Request.Context(), req.Email); err != nil {
+		var restErr *rest_err.RestErr
+
+		switch {
+		case errors.Is(err, auth.OTPCodeExist):
+			restErr = rest_err.NewConflictValidationError(err.Error(), nil)
+		default:
+			restErr = rest_err.NewInternalServerError("internal server error", nil)
+		}
+
+		c.JSON(restErr.Code, restErr)
+		return
+	}
+
+	c.Status(http.StatusAccepted)
+}
+
+// @Summary Troca a senha usando OTP
+// @Description Valida o OTP e troca a senha do usuário.
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.OTPResetPasswordRequest true "Email, OTP e nova senha"
+// @Success 200 "Senha alterada com sucesso"
+// @Failure 400 {object} rest_err.RestErr "JSON inválido"
+// @Failure 403 {object} rest_err.RestErr "OTP inválido"
+// @Failure 500 {object} rest_err.RestErr "Erro interno"
+// @Router /api/auth/password/reset [post]
+func (ctrl *impl) ResetPassword(c *gin.Context) {
+	var req dto.OTPResetPasswordRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		restErr := rest_err.NewBadRequestError("invalid json body")
+		c.JSON(restErr.Code, restErr)
+		return
+	}
+
+	ok, err := ctrl.service.ChangeUserPwd(
+		c.Request.Context(),
+		req.OTPCode,
+		req.Email,
+		req.Password,
+	)
+	if err != nil {
+		var restErr *rest_err.RestErr
+
+		switch {
+		case errors.Is(err, auth.OTPCodeWrong):
+			restErr = rest_err.NewForbiddenError(err.Error())
+		default:
+			restErr = rest_err.NewInternalServerError("internal server error", nil)
+		}
+
+		c.JSON(restErr.Code, restErr)
+		return
+	}
+
+	if !ok {
+		// fallback defensivo, teoricamente não deveria cair aqui
+		restErr := rest_err.NewInternalServerError("could not change password", nil)
+		c.JSON(restErr.Code, restErr)
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
