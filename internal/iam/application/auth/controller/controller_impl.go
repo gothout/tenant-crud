@@ -6,6 +6,7 @@ import (
 	"tenant-crud/internal/iam/application/auth"
 	"tenant-crud/internal/iam/application/auth/dto"
 	"tenant-crud/internal/iam/application/auth/service"
+	"tenant-crud/internal/iam/domain/user"
 	userDto "tenant-crud/internal/iam/domain/user/dto"
 	"tenant-crud/internal/pkg/rest_err"
 
@@ -124,6 +125,8 @@ func (ctrl *impl) CreateOTP(c *gin.Context) {
 		switch {
 		case errors.Is(err, auth.OTPCodeExist):
 			restErr = rest_err.NewConflictValidationError(err.Error(), nil)
+		case errors.Is(err, user.ErrNotFound):
+			restErr = rest_err.NewNotFoundError(err.Error())
 		default:
 			restErr = rest_err.NewInternalServerError("internal server error", nil)
 		}

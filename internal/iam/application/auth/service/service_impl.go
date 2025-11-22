@@ -62,6 +62,10 @@ func (s *impl) GetAcessToken(ctx context.Context, token string) (model.AcessToke
 }
 
 func (s *impl) CreateOTPCode(ctx context.Context, email string) error {
+	_, err := s.userService.Read(ctx, modelUser.User{Email: email})
+	if err != nil {
+		return err
+	}
 	_, found := cache.GetOTP(email)
 	if found {
 		return auth.OTPCodeExist
